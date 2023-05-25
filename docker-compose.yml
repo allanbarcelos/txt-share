@@ -8,8 +8,6 @@ services:
         - "3000:3000"
     volumes:
         - ./api:/usr/api
-    depends_on:
-        - db
     working_dir: /usr/api
     command: bash -c "npm install && npm start"
     networks:

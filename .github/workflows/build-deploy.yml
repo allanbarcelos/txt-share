@@ -10,7 +10,7 @@ on:
 env:
   PRODUCTION: true
   # HTTPS: true
-  # API: https://api.barcelos.dev
+  # API: https://txtshare.barcelos.dev
 
 jobs:
   test-build-deploy:

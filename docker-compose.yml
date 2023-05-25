@@ -27,7 +27,11 @@ services:
       - ./logs:/var/log/nginx/
   certbot:
       image: certbot/certbot:latest
+      depends_on:
+        - web
       volumes:
         - ./certs:/etc/letsencrypt
         - ./dist:/usr/share/nginx/html
-      command: certonly --webroot --webroot-path=/usr/share/nginx/html --email allan@barcelos.dev --agree-tos --no-eff-email --staging --force-renewal
+      environment:
+        - CERTBOT_DOMAINS=txtshare.barcelos.dev
+      command: certonly -d txtshare.barcelos.dev --webroot --webroot-path=/usr/share/nginx/html --email allan@barcelos.dev --agree-tos --no-eff-email --staging --force-renewal

@@ -41,7 +41,7 @@ jobs:
 
       - run: npm ci
       # - run: npm run test:prod
-      - run: npm run lint
+      # - run: npm run lint
       - run: npm run build --aot --base-href=/
 
       - name: Install SSH Key

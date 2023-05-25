@@ -1,5 +1,5 @@
 {
-  "name": "paste-and-copy",
+  "name": "txt-share",
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
@@ -25,13 +25,9 @@
     "bootstrap": "^5.2.3",
     "bootstrap-icons": "^1.10.5",
     "cache-manager": "^5.2.1",
-    "cors": "^2.8.5",
     "ngx-socket-io": "^4.4.0",
     "ngx-toastr": "^16.2.0",
-    "node-cache": "^5.1.2",
-    "node-cron": "^3.0.2",
     "rxjs": "~7.8.0",
-    "socket.io": "^4.6.1",
     "tslib": "^2.3.0",
     "zone.js": "~0.12.0"
   },

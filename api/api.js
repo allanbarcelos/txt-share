@@ -26,6 +26,7 @@ app.get('/', (req, res) => {
 
 // SOCKET
 io.on('connection', (socket) => {
+
   // DATA ABOUT CONNECTION
   const clientId = socket.id;
   console.log('A client connected. ID:', clientId);
@@ -38,35 +39,40 @@ io.on('connection', (socket) => {
       validUntil: new Date(new Date().setHours(new Date().getHours() + 1)),
       locked: false, txt: 'Type something here ...'
     };
+
+    const keys = cache.keys();
+    const txtKeys = keys.filter((key) => key.startsWith(txtDBPrefixKey));
+    const txtDB = txtKeys.map((key) => cache.get(key));
+
     if (id) {
-      const keys = cache.keys();
-      const txtKeys = keys.filter((key) => key.startsWith(txtDBPrefixKey));
-      const txtDB = txtKeys.map((key) => cache.get(key));
       if (txtDB.some(x => x.id === id))
         obj = txtDB.find(x => x.id === id)
       else
         socket.emit('_txtNotExist', true);
-    } else {
-      cache.set(`${txtDBPrefixKey}${obj.id}`, obj);
-    }
+    } else cache.set(`${txtDBPrefixKey}${obj.id}`, obj);
+
     socket.join(obj.id);
     socket.emit('_startTXT', obj);
   });
 
   // 
   socket.on('updateTXT', ({ id, txt }) => {
+
+    const keys = cache.keys();
+    const txtKeys = keys.filter((key) => key.startsWith(txtDBPrefixKey));
+    const txtDB = txtKeys.map((key) => cache.get(key));
+    const obj = txtDB.find(x => x.id === id);
+
     const size = Buffer.byteLength(txt, 'utf8');
+
     if (size > (100 * 1024))
       socket.emit('_sizeExceeded', true);
     else {
-      const keys = cache.keys();
-      const txtKeys = keys.filter((key) => key.startsWith(txtDBPrefixKey));
-      const txtDB = txtKeys.map((key) => cache.get(key));
-      const obj = txtDB.find(x => x.id === id);
       obj.txt = txt;
       cache.set(`${txtDBPrefixKey}${id}`, obj);
       socket.to(obj.id).emit('_updateTXT', obj);
     }
+
   });
 
   // 
@@ -75,6 +81,7 @@ io.on('connection', (socket) => {
     const txtKeys = keys.filter((key) => key.startsWith(txtDBPrefixKey));
     const txtDB = txtKeys.map((key) => cache.get(key));
     const obj = txtDB.some(x => x.id === id);
+
     if (obj) {
       cache.del(`${txtDBPrefixKey}${id}`);
       socket.to(obj.id).emit('_deleteTXT', true);
@@ -89,6 +96,7 @@ io.on('connection', (socket) => {
     const txtKeys = keys.filter((key) => key.startsWith(txtDBPrefixKey));
     const txtDB = txtKeys.map((key) => cache.get(key));
     const obj = txtDB.find(x => x.id === id);
+
     if (obj) {
       obj.validUntil = new Date(new Date().setHours(new Date().getHours() + 1));
       socket.to(obj.id).emit('_updateTXT', obj);
@@ -97,42 +105,36 @@ io.on('connection', (socket) => {
     }
   });
 
-  // 
+  // -------------------------------------------------------------------------------------------------
   socket.on('disconnect', () => {
     console.log('A client disconnected.');
   });
 });
 
-// --
-
-// Cron para excluir os registros vencidos do cache
+// Cron para excluir os registros vencidos do cache --------------------------------------------------
 cron.schedule('* * * * *', async () => {
   const keys = cache.keys();
   const txtKeys = keys.filter((key) => key.startsWith(txtDBPrefixKey));
   await Promise.all(
     txtKeys
       .map((key) => cache.get(key))
-      .filter(({ createdAt }) => createdAt < new Date(new Date().setHours(new Date().getHours() - 1)))
+      .filter(({ createdAt }) => new Date(createdAt) < new Date(new Date().setHours(new Date().getHours() - 1)))
       .map(({ id }) => cache.del(`${txtDBPrefixKey}${id}`))
   );
 });
 
-// NODEJS START
-
+// NODEJS START -------------------------------------------------------------------------------------
 server.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });
 
-// FUNCTIONS
-
+// FUNCTIONS ----------------------------------------------------------------------------------------
 function generateRandomString(length) {
   const characters = 'abcdefghijklmnopqrstuvwxyz0123456789';
   let randomString = '';
-
   for (let i = 0; i < length; i++) {
     const randomIndex = Math.floor(Math.random() * characters.length);
     randomString += characters.charAt(randomIndex);
   }
-
   return randomString;
 }

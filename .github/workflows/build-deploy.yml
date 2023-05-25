@@ -14,7 +14,6 @@ env:
 
 jobs:
   test-build-deploy:
-
     runs-on: ubuntu-latest
 
     strategy:
@@ -36,7 +35,7 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}
-          cache: 'npm'
+          cache: "npm"
 
       - uses: GuillaumeFalourd/setup-rsync@v1.1
 
@@ -44,12 +43,6 @@ jobs:
       # - run: npm run test:prod
       - run: npm run lint
       - run: npm run build --aot --base-href=/
-
-      - name: Building SSL Certificates
-        run: |
-          mkdir ~/ssl
-          echo "${{ secrets.CERTIFICATE_CRT }}" >> ~/ssl/certificate.crt
-          echo "${{ secrets.PRIVATE_KEY }}" >> ~/ssl/private.key
 
       - name: Install SSH Key
         uses: shimataro/ssh-key-action@v2
@@ -71,7 +64,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT }}
           script: |
-            cd ${{ secrets.HOME }}/codeshare.barcelos.dev
+            cd ${{ secrets.HOME }}/${{ secrets.DOMAIN }}
             docker-compose down -v
 
       - name: Delete OLD Folder
@@ -81,14 +74,14 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT }}
-          script: rm -Rf ${{ secrets.HOME }}/codeshare.barcelos.dev
+          script: rm -Rf ${{ secrets.HOME }}/${{ secrets.DOMAIN }}
 
       - name: Deploy with rsync
         run: |
-          rsync --progress -avz -e "ssh -v -i ./.ssh/id_rsa" ./dist ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.HOME }}/barcelos.dev/
-          rsync --progress -avz -e "ssh -v -i ./.ssh/id_rsa" ./docker-compose.yml ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.HOME }}/barcelos.dev/
-          rsync --progress -avz -e "ssh -v -i ./.ssh/id_rsa" ./nginx.conf ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.HOME }}/barcelos.dev/
-          rsync --progress -avz -e "ssh -v -i ./.ssh/id_rsa" ~/ssl ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.HOME }}/barcelos.dev/
+          rsync --progress -avz -e "ssh -v -i ./.ssh/id_rsa" ./api ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.HOME }}/${{ secrets.DOMAIN }}/
+          rsync --progress -avz -e "ssh -v -i ./.ssh/id_rsa" ./dist ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.HOME }}/${{ secrets.DOMAIN }}/
+          rsync --progress -avz -e "ssh -v -i ./.ssh/id_rsa" ./docker-compose.yml ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.HOME }}/${{ secrets.DOMAIN }}/
+          rsync --progress -avz -e "ssh -v -i ./.ssh/id_rsa" ./nginx.conf ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.HOME }}/${{ secrets.DOMAIN }}/
 
       - name: Start Docker Container
         uses: appleboy/ssh-action@master
@@ -98,21 +91,5 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT }}
           script: |
-            cd ${{ secrets.HOME }}/barcelos.dev
+            cd ${{ secrets.HOME }}/${{ secrets.DOMAIN }}
             docker-compose up -d
-
-      # - name: Restart Node Server
-      #   uses: appleboy/ssh-action@master
-      #   with:
-      #     host: ${{ secrets.SSH_HOST }}
-      #     username: ${{ secrets.SSH_USER }}
-      #     key: ${{ secrets.SSH_PRIVATE_KEY }}
-      #     port: ${{ secrets.SSH_PORT }}
-      #     script: |
-      #       cd /var/www/html
-      #       git fetch origin master
-      #       git reset --hard FETCH_HEAD
-      #       git clean -d -f --exclude secrets
-      #       npm install --production
-      #       chown $(whoami) . # PM2 doesn't recognize root user from Github Actions
-      #       npm run restart

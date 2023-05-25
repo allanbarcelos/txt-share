@@ -19,8 +19,8 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
   txtEditor: string = '';
   lineCountCache: number = 0;
   url!: string;
+  countdownTxt!: string
 
-  public countdownTxt!: string
   private countdown: number = 0;
   private countdownInterval: any;
   private subscriptions: Array<Subscription> = []
@@ -83,8 +83,6 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
     );
 
     this.socket.emit('startTXT', { id });
-
-
   }
 
   ngAfterViewInit() {
@@ -103,7 +101,6 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
     const id = this.location.path().replace('/', '');
     this.socket.emit('updateTXT', { id, txt });
   }
-
 
   onTxtEditorScroll() {
     this.lineCounterTextarea.nativeElement.scrollTop = this.txtEditorTextarea.nativeElement.scrollTop;
@@ -158,7 +155,5 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
 
     return `${minsStr}:${secsStr}`;
   }
-
-
 
 }

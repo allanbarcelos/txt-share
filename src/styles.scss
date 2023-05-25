@@ -1,1 +1,35 @@
 /* You can add global styles to this file, and also import other style files */
+@import "./../node_modules/bootstrap/scss/bootstrap.scss";
+@import "./../node_modules/bootstrap-icons/font/bootstrap-icons.scss";
+
+// regular style toast
+@import "ngx-toastr/toastr";
+
+// bootstrap style toast
+// or import a bootstrap 4 alert styled design (SASS ONLY)
+// should be after your bootstrap imports, it uses bs4 variables, mixins, functions
+@import "ngx-toastr/toastr-bs5-alert";
+
+html,
+body {
+    margin: 0;
+    padding: 0;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    // font-family: lucida console, courier new, courier, monospace;
+    font-size: 1rem;
+    font-weight: 400;
+}
+
+/* Sticky footer styles
+-------------------------------------------------- */
+html {
+    position: relative;
+    min-height: 100%;
+}
+
+body {
+    /* Margin bottom by footer height */
+    margin-bottom: 60px;
+}

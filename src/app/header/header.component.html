@@ -1,0 +1,34 @@
+<header>
+    <!-- Fixed navbar -->
+    <nav class="navbar navbar-expand-md navbar-dark bg-dark">
+        <div class="container  d-flex justify-content-between align-itens-center">
+            <div class="d-flex align-items-center gap-2">
+                <a class="navbar-brand" href="#">TXT Share</a>
+                <button type="button" (click)="openModal(infoModal)" class="btn btn-sm btn-outline-info">
+                    <i class="bi bi-question-circle"></i>
+                </button>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <button type="button" class="btn btn-primary" (click)="newTxt()" title="New TXT">
+                    <i class="bi bi-file-earmark-plus"></i>
+                    New
+                </button>
+                <button type="button" class="btn btn-secondary" (click)="downloadTXT()" title="Download TXT">
+                    <i class="bi bi-box-arrow-down"></i>
+                </button>
+                <button type="button" (click)="openModal(shareModal)" class="btn btn-outline-success" title="Share TXT">
+                    <i class="bi bi-share"></i>
+                    Share
+                </button>
+                <button type="button" style="width: 95px;" class="btn btn-warning" title="Renew TXT Time"
+                    (click)="renewTXT()">
+                    {{countdownTxt || '00:00'}}
+                    <i class="bi bi-arrow-clockwise"></i>
+                </button>
+                <button type="button" class="btn btn-danger" (click)="deleteTXT()" title="Delete TXT">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+</header>

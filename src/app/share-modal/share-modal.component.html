@@ -1,0 +1,38 @@
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <strong>Share TXT Share</strong>
+    </div>
+    <div class="card-body">
+        <div class="input-group mb-3">
+            <input type="text" class="form-control" [(ngModel)]="url" disabled>
+            <button class="btn btn-outline-secondary" type="button" (click)="copyToClipboard()">
+                <i class="bi bi-clipboard"></i>
+            </button>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+            <strong>Share using: </strong>
+            <a class="btn btn-success" href="whatsapp://send?text=Ahoy! I invite you to follow my TXT Share {{url}}"
+                target="_blank">
+                Whatsapp
+                <i class="bi bi-whatsapp"></i>
+            </a>
+
+            <a class="btn btn-default" style="background-color: #0088cc; color: white"
+                href="https://t.me/share/url?url=Ahoy! I invite you to follow my TXT Share {{url}}" target="_blank">
+                Telegram
+                <i class="bi bi-telegram"></i>
+            </a>
+
+            <a class="btn btn-default" style="background-color: #464EB8 ; color: white"
+                href="msteams://compose/?message=Ahoy! I invite you to follow my TXT Share {{url}}" target="_blank">
+                Teams
+                <i class="bi bi-microsoft-teams"></i>
+            </a>
+        </div>
+
+    </div>
+    <div class="card-footer text-muted">
+        &nbsp;
+    </div>
+</div>

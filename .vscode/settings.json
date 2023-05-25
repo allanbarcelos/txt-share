@@ -1,0 +1,17 @@
+{
+    "typescript.preferences.importModuleSpecifier": "project-relative",
+    "typescript.preferences.quoteStyle": "single",
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll": true,
+      "source.organizeImports": true,
+      "source.sortMembers": true
+    },
+    "material-icon-theme.folders.associations": {
+      "interceptors":"Cluster",
+      "interceptor":"Cluster"
+    },
+    "[html]": {
+      "editor.defaultFormatter": "vscode.html-language-features"
+    }
+  }

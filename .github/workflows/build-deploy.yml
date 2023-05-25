@@ -24,13 +24,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      # - name: Set up Firefox profile
-      #   run: |
-      #     mkdir -p $HOME/.mozilla/firefox/profiles
-      #     echo 'user_pref("webgl.force-enabled", true);' >> $HOME/.mozilla/firefox/profiles/prefs.js
-      #     echo 'user_pref("gfx.webrender.force-disabled", true);' >> $HOME/.mozilla/firefox/profiles/prefs.js
-      #     echo 'user_pref("layers.acceleration.force-enabled", true);' >> $HOME/.mozilla/firefox/profiles/prefs.js
-
       - name: Use Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v3
         with:

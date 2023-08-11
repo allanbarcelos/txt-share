@@ -62,3 +62,14 @@ jobs:
         run: |
           rsync --progress -avz -e "ssh -v -i ./.ssh/id_rsa" ./api ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.HOME }}/txt-share.barcelos.dev/
           rsync --progress -avz -e "ssh -v -i ./.ssh/id_rsa" ./dist/* ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.HOME }}/txt-share.barcelos.dev/html/
+
+      - name: Install API Packages
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            cd ${{ secrets.HOME }}/txt-share.barcelos.dev/api
+            npm i

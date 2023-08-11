@@ -56,9 +56,9 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT }}
-          script: rm -Rf ${{ secrets.HOME }}/${{ secrets.DOMAIN }}
+          script: rm -Rf ${{ secrets.HOME }}/txt-share.barcelos.dev
 
       - name: Deploy with rsync
         run: |
-          rsync --progress -avz -e "ssh -v -i ./.ssh/id_rsa" ./api ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.HOME }}/${{ secrets.DOMAIN }}/
-          rsync --progress -avz -e "ssh -v -i ./.ssh/id_rsa" ./dist ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.HOME }}/${{ secrets.DOMAIN }}/
+          rsync --progress -avz -e "ssh -v -i ./.ssh/id_rsa" ./api ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.HOME }}/txt-share.barcelos.dev/
+          rsync --progress -avz -e "ssh -v -i ./.ssh/id_rsa" ./dist/* ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.HOME }}/txt-share.barcelos.dev/html/

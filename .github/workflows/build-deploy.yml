@@ -9,8 +9,8 @@ on:
 
 env:
   PRODUCTION: true
-  # HTTPS: true
-  # API: https://txtshare.barcelos.dev
+  HTTPS: true
+  API: https://txt-share.barcelos.dev/api
 
 jobs:
   test-build-deploy:
@@ -19,7 +19,7 @@ jobs:
     strategy:
       matrix:
         node-version:
-          - 16.x
+          - 18.x
 
     steps:
       - uses: actions/checkout@v3
@@ -49,20 +49,6 @@ jobs:
       - name: Test SSH connection
         run: ssh -T ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}
 
-      - name: Stop Docker Container
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: ${{ secrets.SSH_PORT }}
-          script: |
-            folder="${{secrets.HOME}}/${{secrets.DOMAIN}}"
-            if [ -d "$folder" ]; then
-              cd ${{ secrets.HOME }}/${{ secrets.DOMAIN }}
-              docker-compose down -v
-            fi
-
       - name: Delete OLD Folder
         uses: appleboy/ssh-action@master
         with:
@@ -76,16 +62,3 @@ jobs:
         run: |
           rsync --progress -avz -e "ssh -v -i ./.ssh/id_rsa" ./api ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.HOME }}/${{ secrets.DOMAIN }}/
           rsync --progress -avz -e "ssh -v -i ./.ssh/id_rsa" ./dist ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.HOME }}/${{ secrets.DOMAIN }}/
-          rsync --progress -avz -e "ssh -v -i ./.ssh/id_rsa" ./docker-compose.yml ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.HOME }}/${{ secrets.DOMAIN }}/
-          rsync --progress -avz -e "ssh -v -i ./.ssh/id_rsa" ./nginx.conf ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.HOME }}/${{ secrets.DOMAIN }}/
-
-      - name: Start Docker Container
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: ${{ secrets.SSH_PORT }}
-          script: |
-            cd ${{ secrets.HOME }}/${{ secrets.DOMAIN }}
-            docker-compose up -d

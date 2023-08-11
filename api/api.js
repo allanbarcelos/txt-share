@@ -31,7 +31,7 @@ io.on('connection', (socket) => {
   const clientId = socket.id;
   console.log('A client connected. ID:', clientId);
 
-  // 
+  //
   socket.on('startTXT', ({ id }) => {
     let obj = {
       id: generateRandomString(12),
@@ -55,7 +55,7 @@ io.on('connection', (socket) => {
     socket.emit('_startTXT', obj);
   });
 
-  // 
+  //
   socket.on('updateTXT', ({ id, txt }) => {
 
     const keys = cache.keys();
@@ -75,7 +75,7 @@ io.on('connection', (socket) => {
 
   });
 
-  // 
+  //
   socket.on('deleteTXT', ({ id }) => {
     const keys = cache.keys();
     const txtKeys = keys.filter((key) => key.startsWith(txtDBPrefixKey));
@@ -90,7 +90,7 @@ io.on('connection', (socket) => {
     }
   });
 
-  // 
+  //
   socket.on('renewTXT', ({ id }) => {
     const keys = cache.keys();
     const txtKeys = keys.filter((key) => key.startsWith(txtDBPrefixKey));

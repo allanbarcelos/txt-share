@@ -1,10 +1,9 @@
 <app-header [txtEditor]="txtEditor" [countdownTxt]="countdownTxt"></app-header>
 
 <main role="main">
-    <textarea #lineCounterTextarea id='lineCounter' wrap='off' [(ngModel)]="lineCounter" readonly></textarea>
-    <textarea #txtEditorTextarea id='txtEditor' wrap='off' (scroll)="onTxtEditorScroll()" (input)="line_counter()"
-        (keydown)="onTxtEditorKeydown($event)" (ngModelChange)="ngModelChange($event)"
-        [(ngModel)]="txtEditor"></textarea>
+  <textarea #lineCounterTextarea id='lineCounter' wrap='off' [(ngModel)]="lineCounter" readonly></textarea>
+  <textarea #txtEditorTextarea id='txtEditor' wrap='off' (scroll)="onTxtEditorScroll()" (input)="line_counter()"
+    (keydown)="onTxtEditorKeydown($event)" (ngModelChange)="ngModelChange($event)" [(ngModel)]="txtEditor"></textarea>
 </main>
 
 <app-footer></app-footer>

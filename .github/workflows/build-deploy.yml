@@ -73,3 +73,4 @@ jobs:
           script: |
             cd ${{ secrets.HOME }}/txt-share.barcelos.dev/api
             npm i
+            pm2 -s restart ${{secrets.PM2_PROCESS_NAME}}

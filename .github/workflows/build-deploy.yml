@@ -7,10 +7,10 @@ on:
   # schedule:
   #   - cron: '0 0 * * *'
 
-env:
-  PRODUCTION: true
-  HTTPS: true
-  API: https://txt-share.barcelos.dev/api
+# env:
+#   PRODUCTION: true
+#   HTTPS: true
+#   API: https://txt-share.barcelos.dev/api
 
 jobs:
   test-build-deploy:
@@ -35,6 +35,8 @@ jobs:
       - run: npm ci
       # - run: npm run test:prod
       # - run: npm run lint
+      - run: echo "API=${{secrets.API}}" >> .env
+      - run: echo "PRODUCTION=${{secrets.PRODUCTION}}" >> .env
       - run: npm run build --aot --base-href=/
 
       - name: Install SSH Key

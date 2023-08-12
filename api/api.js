@@ -8,6 +8,7 @@ const cron = require('node-cron');
 const app = express();
 const server = http.createServer(app);
 const io = socketIO(server, {
+  path: '/api/socket.io',
   cors: {
     origin: "*",
   }

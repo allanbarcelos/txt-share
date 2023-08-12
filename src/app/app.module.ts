@@ -13,7 +13,7 @@ import { HeaderComponent } from './header/header.component';
 import { InfoModalComponent } from './info-modal/info-modal.component';
 import { ShareModalComponent } from './share-modal/share-modal.component';
 
-const config: SocketIoConfig = { url: '/', options: { path: '/api' } }; // Substitua pela URL correta do seu servidor
+const config: SocketIoConfig = { url: '/', options: { path: '/api/socket.io' } }; // Substitua pela URL correta do seu servidor
 
 @NgModule({
   declarations: [

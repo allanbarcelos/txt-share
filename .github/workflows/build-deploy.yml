@@ -75,7 +75,7 @@ jobs:
           script: |
             cd ${{ secrets.HOME }}/txt-share.barcelos.dev/api
             ls
-            npm i
+            ${{ secrets.NPM }} i
 
       - name: API Start/Restart
         id: check_pm2_process

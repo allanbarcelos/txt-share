@@ -74,6 +74,7 @@ jobs:
           port: ${{ secrets.SSH_PORT }}
           script: |
             cd ${{ secrets.HOME }}/txt-share.barcelos.dev/api
+            ls
             npm i
 
       - name: API Start/Restart

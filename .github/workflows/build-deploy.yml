@@ -75,4 +75,24 @@ jobs:
           script: |
             cd ${{ secrets.HOME }}/txt-share.barcelos.dev/api
             npm i
+
+      - name: API Start/Restart
+        id: check_pm2_process
+        run: |
+          pm2 show ${{secrets.PM2_PROCESS_NAME}} || echo "Process not found"
+          if [ $? -ne 0 ]; then
+            echo "Process not found, starting it..."
+            pm2 --name ${{secrets.PM2_PROCESS_NAME}} start ${{ secrets.HOME }}/txt-share.barcelos.dev/api/api.js
+          else
             pm2 -s restart ${{secrets.PM2_PROCESS_NAME}}
+          fi
+
+      - name: Restart Nginx
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            systemctl restart nginx

@@ -74,13 +74,16 @@ jobs:
           port: ${{ secrets.SSH_PORT }}
           script: |
             cd ${{ secrets.HOME }}/txt-share.barcelos.dev/api
-            ls
-            nvm current
             npm i
 
       - name: API Start/Restart
-        id: check_pm2_process
-        run: |
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
           pm2 show ${{secrets.PM2_PROCESS_NAME}} || echo "Process not found"
           if [ $? -ne 0 ]; then
             echo "Process not found, starting it..."

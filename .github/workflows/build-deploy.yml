@@ -84,7 +84,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT }}
           script: |
-            pm2 show ${{secrets.PM2_PROCESS_NAME}} || echo "Process not found"
+            pm2 pid ${{secrets.PM2_PROCESS_NAME}}
             if [ $? -ne 0 ]; then
               echo "Process not found, starting it..."
               pm2 start ${{ secrets.HOME }}/txt-share.barcelos.dev/api/api.js --name ${{secrets.PM2_PROCESS_NAME}}

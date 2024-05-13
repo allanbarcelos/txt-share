@@ -16,56 +16,54 @@ const io = socketIO(server, {
 
 const port = 3000;
 
-app.use(cors({ origin: '*', credentials: true }));
-
+// Configuração do cache
 const cache = new NodeCache();
 const txtDBPrefixKey = 'TXT_';
 
+// Configuração do CORS
+app.use(cors({ origin: '*', credentials: true }));
+
+// Rota inicial
 app.get('/', (req, res) => {
   res.send('API TXT Share');
 });
 
-// SOCKET
+// Conexão do Socket.IO
 io.on('connection', (socket) => {
-
-  // DATA ABOUT CONNECTION
   const clientId = socket.id;
   console.log('A client connected. ID:', clientId);
 
-  //
+  // Início do compartilhamento de texto
   socket.on('startTXT', ({ id }) => {
     let obj = {
       id: generateRandomString(12),
       createdAt: new Date(),
       validUntil: new Date(new Date().setHours(new Date().getHours() + 1)),
-      locked: false, txt: 'Type something here ...'
+      locked: false,
+      txt: 'Type something here ...'
     };
 
-    const keys = cache.keys();
-    const txtKeys = keys.filter((key) => key.startsWith(txtDBPrefixKey));
-    const txtDB = txtKeys.map((key) => cache.get(key));
-
+    const txtDB = getTxtDB();
     if (id) {
-      if (txtDB.some(x => x.id === id))
-        obj = txtDB.find(x => x.id === id)
+      const existingObj = txtDB.find(x => x.id === id);
+      if (existingObj)
+        obj = existingObj;
       else
         socket.emit('_txtNotExist', true);
-    } else cache.set(`${txtDBPrefixKey}${obj.id}`, obj);
+    } else {
+      cache.set(`${txtDBPrefixKey}${obj.id}`, obj);
+    }
 
     socket.join(obj.id);
     socket.emit('_startTXT', obj);
   });
 
-  //
+  // Atualização do texto compartilhado
   socket.on('updateTXT', ({ id, txt }) => {
-
-    const keys = cache.keys();
-    const txtKeys = keys.filter((key) => key.startsWith(txtDBPrefixKey));
-    const txtDB = txtKeys.map((key) => cache.get(key));
+    const txtDB = getTxtDB();
     const obj = txtDB.find(x => x.id === id);
 
     const size = Buffer.byteLength(txt, 'utf8');
-
     if (size > (100 * 1024))
       socket.emit('_sizeExceeded', true);
     else {
@@ -73,29 +71,24 @@ io.on('connection', (socket) => {
       cache.set(`${txtDBPrefixKey}${id}`, obj);
       socket.to(obj.id).emit('_updateTXT', obj);
     }
-
   });
 
-  //
+  // Exclusão do texto compartilhado
   socket.on('deleteTXT', ({ id }) => {
-    const keys = cache.keys();
-    const txtKeys = keys.filter((key) => key.startsWith(txtDBPrefixKey));
-    const txtDB = txtKeys.map((key) => cache.get(key));
-    const obj = txtDB.some(x => x.id === id);
+    const txtDB = getTxtDB();
+    const objIndex = txtDB.findIndex(x => x.id === id);
 
-    if (obj) {
+    if (objIndex !== -1) {
       cache.del(`${txtDBPrefixKey}${id}`);
-      socket.to(obj.id).emit('_deleteTXT', true);
+      socket.to(id).emit('_deleteTXT', true);
     } else {
-      socket.to(obj.id).emit('_deleteTXT', false);
+      socket.emit('_deleteTXT', false);
     }
   });
 
-  //
+  // Renovação do texto compartilhado
   socket.on('renewTXT', ({ id }) => {
-    const keys = cache.keys();
-    const txtKeys = keys.filter((key) => key.startsWith(txtDBPrefixKey));
-    const txtDB = txtKeys.map((key) => cache.get(key));
+    const txtDB = getTxtDB();
     const obj = txtDB.find(x => x.id === id);
 
     if (obj) {
@@ -106,30 +99,28 @@ io.on('connection', (socket) => {
     }
   });
 
-  // -------------------------------------------------------------------------------------------------
+  // Desconexão do cliente
   socket.on('disconnect', () => {
     console.log('A client disconnected.');
   });
 });
 
-// Cron para excluir os registros vencidos do cache --------------------------------------------------
+// Cron job para excluir registros vencidos do cache
 cron.schedule('* * * * *', async () => {
-  const keys = cache.keys();
-  const txtKeys = keys.filter((key) => key.startsWith(txtDBPrefixKey));
+  const txtDB = getTxtDB();
   await Promise.all(
-    txtKeys
-      .map((key) => cache.get(key))
+    txtDB
       .filter(({ createdAt }) => new Date(createdAt) < new Date(new Date().setHours(new Date().getHours() - 1)))
       .map(({ id }) => cache.del(`${txtDBPrefixKey}${id}`))
   );
 });
 
-// NODEJS START -------------------------------------------------------------------------------------
+// Inicialização do servidor Node.js
 server.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });
 
-// FUNCTIONS ----------------------------------------------------------------------------------------
+// Função para gerar uma string aleatória
 function generateRandomString(length) {
   const characters = 'abcdefghijklmnopqrstuvwxyz0123456789';
   let randomString = '';
@@ -138,4 +129,11 @@ function generateRandomString(length) {
     randomString += characters.charAt(randomIndex);
   }
   return randomString;
+}
+
+// Função auxiliar para obter os dados do cache
+function getTxtDB() {
+  const keys = cache.keys();
+  const txtKeys = keys.filter((key) => key.startsWith(txtDBPrefixKey));
+  return txtKeys.map((key) => cache.get(key));
 }

@@ -6,7 +6,6 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { NgbModalModule } from '@ng-bootstrap/ng-bootstrap';
 import { SocketIoConfig, SocketIoModule } from 'ngx-socket-io';
 import { ToastrModule } from 'ngx-toastr';
-import { environment } from '../environments/environment';
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { FooterComponent } from './footer/footer.component';
@@ -14,7 +13,7 @@ import { HeaderComponent } from './header/header.component';
 import { InfoModalComponent } from './info-modal/info-modal.component';
 import { ShareModalComponent } from './share-modal/share-modal.component';
 
-const config: SocketIoConfig = { url: environment.api, options: { path: '/api/socket.io' } }; // Substitua pela URL correta do seu servidor
+const config: SocketIoConfig = { url: '/', options: { path: '/socket.io' } }; // Substitua pela URL correta do seu servidor
 
 @NgModule({
   declarations: [
@@ -39,9 +38,9 @@ const config: SocketIoConfig = { url: environment.api, options: { path: '/api/so
       positionClass: 'toast-top-center',
       preventDuplicates: true,
     }), // ToastrModule added
-    NgbModalModule
+    NgbModalModule,
   ],
   providers: [],
-  bootstrap: [AppComponent]
+  bootstrap: [AppComponent],
 })
-export class AppModule { }
+export class AppModule {}

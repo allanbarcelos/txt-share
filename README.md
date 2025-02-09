@@ -1,6 +1,6 @@
 # TXTShare
 
-## Version: 0.0.1-alfa
+## Version: 0.0.2-alfa
 
 Welcome to TXT Share, this a web application that made easy share texts between collaborators.
 

@@ -4,26 +4,27 @@ const express = require('express');
 const http = require('http');
 const socketIO = require('socket.io');
 const NodeCache = require('node-cache');
-const cors = require('cors');
+// const cors = require('cors');
 const cron = require('node-cron');
 
 const app = express();
 const server = http.createServer(app);
-const io = socketIO(server, {
-  path: '/api/socket.io',
-  cors: {
-    origin: "*",
-  }
-});
 
-const port = 3000;
+// const io = socketIO(server, {
+//   path: '/api/socket.io',
+//   // cors: {
+//   //   origin: "*",
+//   // }
+// });
+
+const io = socketIO(server);
 
 // Configuração do cache
 const cache = new NodeCache();
 const txtDBPrefixKey = 'TXT_';
 
 // Configuração do CORS
-app.use(cors({ origin: '*', credentials: true }));
+// app.use(cors({ origin: '*', credentials: true }));
 
 // Rota inicial
 app.get('/', (req, res) => {
@@ -118,8 +119,8 @@ cron.schedule('* * * * *', async () => {
 });
 
 // Inicialização do servidor Node.js
-server.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
+server.listen(3000, () => {
+  console.log(`Server is running on port ${3000}`);
 });
 
 // Função para gerar uma string aleatória

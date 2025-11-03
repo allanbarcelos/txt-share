@@ -13,12 +13,14 @@ import { HeaderComponent } from './header/header.component';
 import { InfoModalComponent } from './info-modal/info-modal.component';
 import { ShareModalComponent } from './share-modal/share-modal.component';
 
-let baseUrl = window.location.origin + window.location.pathname;
-baseUrl = baseUrl.replace(/\/$/, '');
+const host = window.location.origin;
+const pathname = window.location.pathname.replace(/\/$/, '');
 
 const config: SocketIoConfig = {
-  url: baseUrl,
-  options: { path: '/socket.io' }
+  url: host,
+  options: {
+    path: `${pathname}/socket.io`
+  }
 };
 
 @NgModule({

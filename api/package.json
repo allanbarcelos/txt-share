@@ -2,9 +2,9 @@
   "name": "api",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
-    "start": "nodemon -x 'node index.js || (sleep 10; touch index.js)'",
+    "start": "nodemon -x 'node server.js || (sleep 10; touch server.js)'",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",

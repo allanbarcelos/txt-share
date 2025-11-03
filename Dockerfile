@@ -23,7 +23,7 @@ RUN apk add --no-cache nodejs npm
 
 WORKDIR /app
 
-COPY ./default.conf /etc/nginx/conf.d/default.conf
+COPY ./nginx.conf /etc/nginx/conf.d/default.conf
 
 COPY ./api/index.js /app/
 COPY ./api/package*.json /app/

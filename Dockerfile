@@ -25,7 +25,7 @@ WORKDIR /app
 
 COPY ./nginx.conf /etc/nginx/conf.d/default.conf
 
-COPY ./api/index.js /app/
+COPY ./api/*.js /app/
 COPY ./api/package*.json /app/
 RUN npm install
 

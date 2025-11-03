@@ -13,7 +13,9 @@ import { HeaderComponent } from './header/header.component';
 import { InfoModalComponent } from './info-modal/info-modal.component';
 import { ShareModalComponent } from './share-modal/share-modal.component';
 
-const config: SocketIoConfig = { url: '/', options: { path: './socket.io' } }; // Substitua pela URL correta do seu servidor
+const host = `${window.location.origin}${window.location.pathname}`;
+
+const config: SocketIoConfig = { url: host, options: { path: '/socket.io' } };
 
 @NgModule({
   declarations: [

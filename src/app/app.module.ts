@@ -14,14 +14,25 @@ import { InfoModalComponent } from './info-modal/info-modal.component';
 import { ShareModalComponent } from './share-modal/share-modal.component';
 
 const host = window.location.origin;
-const pathname = window.location.pathname.replace(/\/$/, '');
+const segments = window.location.pathname.split('/').filter(Boolean);
+
+const lastSegment = segments[segments.length - 1];
+
+const idPattern = /^[a-zA-Z0-9_-]{8,}$/;
+
+if (idPattern.test(lastSegment)) {
+  segments.pop();
+}
+
+const basePath = '/' + segments.join('/');
 
 const config: SocketIoConfig = {
   url: host,
   options: {
-    path: `${pathname}/socket.io`
+    path: `${basePath}/socket.io`
   }
 };
+
 
 @NgModule({
   declarations: [

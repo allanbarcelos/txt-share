@@ -37,8 +37,10 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
 
   ngOnInit(): void {
     const id = this.location.path().replace('/', '');
+    console.log(id);
 
     this.url = `${window.location.href}`;
+    console.log(this.url);
 
     this.subscriptions.push(
       this.socket.fromEvent('_startTXT').subscribe(({ id, txt, createdAt, validUntil }: any) => {

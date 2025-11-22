@@ -16,21 +16,16 @@ RUN npm run build
 # Fase 2
 FROM nginx:alpine
 
-# RUN apk add --no-cache nodejs npm && \
-#     npm install -g pm2
-
-RUN apk add --no-cache nodejs npm
-
 WORKDIR /app
 
-COPY ./nginx.conf /etc/nginx/conf.d/default.conf
-
-COPY ./api/*.js /app/
-COPY ./api/package*.json /app/
-RUN npm install
+COPY ./nginx/conf.d/default.conf /etc/nginx/conf.d/default.conf
 
 COPY --from=builder /app/dist /var/www/html
 
-CMD ["/bin/sh", "-c", "nginx -s reload || nginx && npm start"]
-
 EXPOSE 80
+
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost/ || exit 1
+
+CMD ["nginx", "-g", "daemon off;"]
+

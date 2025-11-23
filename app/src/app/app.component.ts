@@ -36,6 +36,11 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   ngOnInit(): void {
+
+    this.socket.fromEvent('connect').subscribe(() => {
+      console.log('Connected!', this.socket.ioSocket.id);
+    });
+
     const id = this.location.path().replace('/', '');
     console.log(id);
 
@@ -83,6 +88,7 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
         this.startCountDown();
       })
     );
+    console.log("startTXT");
 
     this.socket.emit('startTXT', { id });
   }

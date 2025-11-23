@@ -49,9 +49,17 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
 
     this.subscriptions.push(
       this.socket.fromEvent('_startTXT').subscribe(({ id, txt, createdAt, validUntil }: any) => {
-        if (id)
-          this.router.navigate(['', id]);
+        if (id) this.router.navigate(['', id]);
         this.txtEditor = txt;
+
+        if (this.txtEditorTextarea) {
+          this.txtEditorTextarea.nativeElement.value = txt;
+        }
+
+        this.line_counter();
+
+        this.cdr.detectChanges();
+
         this.countdown = Math.round((new Date(validUntil).getTime() - new Date().getTime()) / 1000);
         this.startCountDown();
       })

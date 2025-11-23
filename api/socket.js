@@ -1,35 +1,26 @@
 // socket.js
 const { getTxtById, setTxt, deleteTxt, generateRandomString } = require('./cache');
 
-// Timeout para operações
-const SOCKET_TIMEOUT = 10000;
+// Configuração de heartbeat do Socket.IO
+const SOCKET_IO_OPTIONS = {
+    pingInterval: 25000, // envia ping a cada 25s
+    pingTimeout: 10000,  // desconecta se não houver pong em 10s
+};
 
-function setupSocket(io, cache) {
+function setupSocket(io) {
+    console.log("setup");
+
     io.on('connection', (socket) => {
         console.log('Client connected. ID:', socket.id, 'Total clients:', io.engine.clientsCount);
 
-        // Configurar timeout para operações
-        socket.setTimeout(SOCKET_TIMEOUT);
-
+        // Eventos do cliente
         socket.on('startTXT', (data, callback) => startTXT(socket, data, callback));
         socket.on('updateTXT', (data, callback) => updateTXT(socket, data, callback));
         socket.on('deleteTXT', (data, callback) => deleteTXT(socket, data, callback));
         socket.on('renewTXT', (data, callback) => renewTXT(socket, data, callback));
 
-        // Heartbeat para detectar conexões mortas
-        let heartbeatInterval = setInterval(() => {
-            if (socket.connected) {
-                socket.emit('ping');
-            }
-        }, 30000);
-
-        socket.on('pong', () => {
-            // Cliente respondeu ao ping
-        });
-
         socket.on('disconnect', (reason) => {
             console.log('Client disconnected:', socket.id, 'Reason:', reason);
-            clearInterval(heartbeatInterval);
         });
 
         socket.on('error', (error) => {
@@ -37,14 +28,17 @@ function setupSocket(io, cache) {
         });
     });
 
-    // Monitorar eventos de nível de servidor
     io.engine.on("connection_error", (err) => {
         console.error('Connection error:', err);
     });
 }
 
+// =================== Funções de TXT ===================
+
 async function startTXT(socket, data, callback) {
     try {
+        console.log("startTXT");
+
         const { id } = data || {};
         let obj;
 
@@ -59,10 +53,13 @@ async function startTXT(socket, data, callback) {
             obj = {
                 id: generateRandomString(12),
                 createdAt: new Date().toISOString(),
-                validUntil: new Date(Date.now() + 60 * 60 * 1000).toISOString(), // 1 hora
+                validUntil: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
                 locked: false,
                 txt: 'Type something here ...'
             };
+
+            console.log(JSON.stringify(obj));
+
 
             if (!setTxt(obj.id, obj)) {
                 throw new Error('Failed to save TXT');

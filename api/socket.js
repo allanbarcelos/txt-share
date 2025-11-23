@@ -51,7 +51,7 @@ async function startTXT(socket, data, callback) {
             }
         } else {
             obj = {
-                id: generateRandomString(12),
+                id: `s_${generateRandomString(7)}`,
                 createdAt: new Date().toISOString(),
                 validUntil: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
                 locked: false,

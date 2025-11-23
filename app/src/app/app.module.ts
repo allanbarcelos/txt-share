@@ -14,10 +14,19 @@ import { HeaderComponent } from './header/header.component';
 import { InfoModalComponent } from './info-modal/info-modal.component';
 import { ShareModalComponent } from './share-modal/share-modal.component';
 
+
+const pathSegments = window.location.pathname.replace(/\/$/, '').split('/');
+
+if (pathSegments[pathSegments.length - 1]?.startsWith('s_')) {
+  pathSegments.pop();
+}
+
+const basePath = pathSegments.join('/');
+
 const config: SocketIoConfig = {
   url: environment.socketHost,
   options: {
-    path: `${window.location.pathname.replace(/\/$/, '')}/socket.io`
+    path: `${basePath}/socket.io`
   }
 };
 

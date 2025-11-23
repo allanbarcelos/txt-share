@@ -6,7 +6,7 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { NgbModalModule } from '@ng-bootstrap/ng-bootstrap';
 import { SocketIoConfig, SocketIoModule } from 'ngx-socket-io';
 import { ToastrModule } from 'ngx-toastr';
-import { environment } from '../environments/environment';
+import { environment } from './../environments/environment';
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { FooterComponent } from './footer/footer.component';

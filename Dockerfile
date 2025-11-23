@@ -3,29 +3,24 @@ FROM node:18 AS builder
 
 WORKDIR /app
 
-COPY ./package*.json /app/
+COPY ./app/package*.json ./
 
 RUN npm install
 
-COPY ./src /app/src
-COPY ./tsconfig*.json /app/
-COPY ./angular.json /app/
+COPY ./app/ ./
 
 RUN npm run build
 
 # Fase 2
 FROM nginx:alpine
 
-WORKDIR /app
-
 COPY ./nginx/conf.d/default.conf /etc/nginx/conf.d/default.conf
 
-COPY --from=builder /app/dist /var/www/html
+COPY --from=builder /app/dist/ /var/www/html/
 
 EXPOSE 80
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost/ || exit 1
+    CMD wget --no-verbose --tries=1 --spider http://localhost/ || exit 1
 
 CMD ["nginx", "-g", "daemon off;"]
-

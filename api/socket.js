@@ -1,79 +1,185 @@
 // socket.js
-const { getTxtDB, generateRandomString, txtDBPrefixKey } = require('./cache');
+const { getTxtById, setTxt, deleteTxt, generateRandomString } = require('./cache');
+
+// Timeout para operações
+const SOCKET_TIMEOUT = 10000;
 
 function setupSocket(io, cache) {
     io.on('connection', (socket) => {
-        console.log('A client connected. ID:', socket.id);
+        console.log('Client connected. ID:', socket.id, 'Total clients:', io.engine.clientsCount);
 
-        socket.on('startTXT', ({ id }) => startTXT(socket, id, cache));
-        socket.on('updateTXT', ({ id, txt }) => updateTXT(socket, id, txt, cache));
-        socket.on('deleteTXT', ({ id }) => deleteTXT(socket, id, cache));
-        socket.on('renewTXT', ({ id }) => renewTXT(socket, id, cache));
+        // Configurar timeout para operações
+        socket.setTimeout(SOCKET_TIMEOUT);
 
-        socket.on('disconnect', () => {
-            console.log('A client disconnected.');
+        socket.on('startTXT', (data, callback) => startTXT(socket, data, callback));
+        socket.on('updateTXT', (data, callback) => updateTXT(socket, data, callback));
+        socket.on('deleteTXT', (data, callback) => deleteTXT(socket, data, callback));
+        socket.on('renewTXT', (data, callback) => renewTXT(socket, data, callback));
+
+        // Heartbeat para detectar conexões mortas
+        let heartbeatInterval = setInterval(() => {
+            if (socket.connected) {
+                socket.emit('ping');
+            }
+        }, 30000);
+
+        socket.on('pong', () => {
+            // Cliente respondeu ao ping
         });
+
+        socket.on('disconnect', (reason) => {
+            console.log('Client disconnected:', socket.id, 'Reason:', reason);
+            clearInterval(heartbeatInterval);
+        });
+
+        socket.on('error', (error) => {
+            console.error('Socket error for client', socket.id, ':', error);
+        });
+    });
+
+    // Monitorar eventos de nível de servidor
+    io.engine.on("connection_error", (err) => {
+        console.error('Connection error:', err);
     });
 }
 
-function startTXT(socket, id, cache) {
-    let obj = {
-        id: generateRandomString(12),
-        createdAt: new Date(),
-        validUntil: new Date(new Date().setHours(new Date().getHours() + 1)),
-        locked: false,
-        txt: 'Type something here ...'
-    };
+async function startTXT(socket, data, callback) {
+    try {
+        const { id } = data || {};
+        let obj;
 
-    const txtDB = getTxtDB();
-    if (id) {
-        const existingObj = txtDB.find(x => x.id === id);
-        if (existingObj) obj = existingObj;
-        else socket.emit('_txtNotExist', true);
-    } else {
-        cache.set(`${txtDBPrefixKey}${obj.id}`, obj);
+        if (id) {
+            obj = getTxtById(id);
+            if (!obj) {
+                socket.emit('_txtNotExist', { id });
+                callback?.({ success: false, error: 'TXT not found' });
+                return;
+            }
+        } else {
+            obj = {
+                id: generateRandomString(12),
+                createdAt: new Date().toISOString(),
+                validUntil: new Date(Date.now() + 60 * 60 * 1000).toISOString(), // 1 hora
+                locked: false,
+                txt: 'Type something here ...'
+            };
+
+            if (!setTxt(obj.id, obj)) {
+                throw new Error('Failed to save TXT');
+            }
+        }
+
+        await socket.join(obj.id);
+        socket.emit('_startTXT', obj);
+        callback?.({ success: true, data: obj });
+
+    } catch (error) {
+        console.error('Error in startTXT:', error);
+        socket.emit('_error', { message: 'Failed to start TXT' });
+        callback?.({ success: false, error: error.message });
     }
-
-    socket.join(obj.id);
-    socket.emit('_startTXT', obj);
 }
 
-function updateTXT(socket, id, txt, cache) {
-    const txtDB = getTxtDB();
-    const obj = txtDB.find(x => x.id === id);
+async function updateTXT(socket, data, callback) {
+    try {
+        const { id, txt } = data || {};
 
-    if (!obj) return socket.emit('_txtNotExist', true);
+        if (!id || txt === undefined) {
+            callback?.({ success: false, error: 'Missing required fields' });
+            return;
+        }
 
-    const size = Buffer.byteLength(txt, 'utf8');
-    if (size > 100 * 1024) socket.emit('_sizeExceeded', true);
-    else {
+        const obj = getTxtById(id);
+        if (!obj) {
+            socket.emit('_txtNotExist', { id });
+            callback?.({ success: false, error: 'TXT not found' });
+            return;
+        }
+
+        const size = Buffer.byteLength(txt, 'utf8');
+        if (size > 100 * 1024) {
+            socket.emit('_sizeExceeded', { maxSize: 100 * 1024, currentSize: size });
+            callback?.({ success: false, error: 'Size exceeded' });
+            return;
+        }
+
         obj.txt = txt;
-        cache.set(`${txtDBPrefixKey}${id}`, obj);
+        obj.lastUpdated = new Date().toISOString();
+
+        if (!setTxt(id, obj)) {
+            throw new Error('Failed to update TXT');
+        }
+
         socket.to(obj.id).emit('_updateTXT', obj);
+        callback?.({ success: true, data: obj });
+
+    } catch (error) {
+        console.error('Error in updateTXT:', error);
+        socket.emit('_error', { message: 'Failed to update TXT' });
+        callback?.({ success: false, error: error.message });
     }
 }
 
-function deleteTXT(socket, id, cache) {
-    const txtDB = getTxtDB();
-    const objIndex = txtDB.findIndex(x => x.id === id);
+async function deleteTXT(socket, data, callback) {
+    try {
+        const { id } = data || {};
 
-    if (objIndex !== -1) {
-        cache.del(`${txtDBPrefixKey}${id}`);
-        socket.to(id).emit('_deleteTXT', true);
-    } else {
-        socket.emit('_deleteTXT', false);
+        if (!id) {
+            callback?.({ success: false, error: 'Missing ID' });
+            return;
+        }
+
+        const obj = getTxtById(id);
+        if (!obj) {
+            socket.emit('_deleteTXT', { success: false });
+            callback?.({ success: false, error: 'TXT not found' });
+            return;
+        }
+
+        if (deleteTxt(id)) {
+            socket.to(id).emit('_deleteTXT', { success: true });
+            callback?.({ success: true });
+        } else {
+            throw new Error('Failed to delete TXT');
+        }
+
+    } catch (error) {
+        console.error('Error in deleteTXT:', error);
+        socket.emit('_error', { message: 'Failed to delete TXT' });
+        callback?.({ success: false, error: error.message });
     }
 }
 
-function renewTXT(socket, id, cache) {
-    const txtDB = getTxtDB();
-    const obj = txtDB.find(x => x.id === id);
+async function renewTXT(socket, data, callback) {
+    try {
+        const { id } = data || {};
 
-    if (obj) {
-        obj.validUntil = new Date(new Date().setHours(new Date().getHours() + 1));
+        if (!id) {
+            callback?.({ success: false, error: 'Missing ID' });
+            return;
+        }
+
+        const obj = getTxtById(id);
+        if (!obj) {
+            socket.emit('_txtNotExist', { id });
+            callback?.({ success: false, error: 'TXT not found' });
+            return;
+        }
+
+        obj.validUntil = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+        obj.lastRenewed = new Date().toISOString();
+
+        if (!setTxt(id, obj)) {
+            throw new Error('Failed to renew TXT');
+        }
+
         socket.to(obj.id).emit('_updateTXT', obj);
-    } else {
-        socket.emit('_txtNotExist', true);
+        callback?.({ success: true, data: obj });
+
+    } catch (error) {
+        console.error('Error in renewTXT:', error);
+        socket.emit('_error', { message: 'Failed to renew TXT' });
+        callback?.({ success: false, error: error.message });
     }
 }
 

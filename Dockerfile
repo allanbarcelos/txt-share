@@ -9,7 +9,7 @@ RUN npm install
 
 COPY ./app/ ./
 
-RUN npm run build --base-href ""
+RUN npm run build
 
 # Fase 2
 FROM nginx:alpine

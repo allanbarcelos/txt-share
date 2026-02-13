@@ -1,5 +1,5 @@
 # Fase 1
-FROM node:18 AS builder
+FROM node:18-alpine AS builder
 
 RUN apk add --no-cache curl
 

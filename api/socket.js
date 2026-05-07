@@ -119,8 +119,16 @@ async function startTXT(socket, data, callback) {
                 return;
             }
         } else {
+            let newId;
+            let attempts = 0;
+            do {
+                newId = `s_${generateRandomString(7)}`;
+                attempts++;
+                if (attempts > 10) throw new Error('Could not generate a unique ID');
+            } while (getTxtById(newId) !== undefined);
+
             obj = {
-                id: `s_${generateRandomString(7)}`,
+                id: newId,
                 createdAt: new Date().toISOString(),
                 validUntil: new Date(Date.now() + 3600000).toISOString(),
                 txt: 'Type something here ...',

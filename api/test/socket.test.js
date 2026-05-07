@@ -246,6 +246,34 @@ describe('startTXT via mock', () => {
         assert.ok(evt.data.id.startsWith('s_'), 'new id should start with s_');
         assert.strictEqual(callbackResult.success, true);
     });
+
+    test('startTXT generates a unique id even when first candidates collide', async () => {
+        // Pre-fill the cache with a known id to force one collision
+        const collidingId = 's_aaaaaaa';
+        setTxt(collidingId, { id: collidingId, validUntil: futureValidUntil(), txt: 'existing' });
+
+        // Patch generateRandomString to return the colliding id once, then a unique one
+        const { generateRandomString } = require('../cache');
+        let callCount = 0;
+        const originalModule = require('../cache');
+        const origFn = originalModule.generateRandomString;
+        originalModule.generateRandomString = () => {
+            callCount++;
+            return callCount === 1 ? 'aaaaaaa' : origFn(7);
+        };
+
+        let cbResult;
+        await new Promise(resolve => {
+            mockSocket._trigger('startTXT', {}, (res) => { cbResult = res; resolve(); });
+        });
+
+        originalModule.generateRandomString = origFn; // restore
+
+        assert.strictEqual(cbResult.success, true);
+        const evt = mockSocket.emitted.find(e => e.event === '_startTXT');
+        assert.ok(evt, '_startTXT should be emitted');
+        assert.notStrictEqual(evt.data.id, collidingId, 'should not overwrite the colliding entry');
+    });
 });
 
 describe('updateTXT via mock', () => {

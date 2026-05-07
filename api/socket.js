@@ -123,7 +123,6 @@ async function startTXT(socket, data, callback) {
                 id: `s_${generateRandomString(7)}`,
                 createdAt: new Date().toISOString(),
                 validUntil: new Date(Date.now() + 3600000).toISOString(),
-                locked: false,
                 txt: 'Type something here ...',
             };
 

@@ -13,9 +13,12 @@ const { cache } = require('./cache');
 const app = express();
 const server = http.createServer(app);
 
-const allowedOrigins = process.env.ALLOWED_ORIGINS
-  ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
-  : ['http://localhost'];
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
+  .split(',')
+  .map(o => o.trim())
+  .filter(Boolean);
+
+if (allowedOrigins.length === 0) allowedOrigins.push('http://localhost');
 
 const io = socketIO(server, {
   pingTimeout: 60000,
@@ -72,6 +75,7 @@ process.on('unhandledRejection', (reason, promise) => {
 
 function gracefulShutdown() {
   console.log('Received shutdown signal, closing server...');
+  io.close();
   server.close((err) => {
     if (err) {
       console.error('Error during shutdown:', err);
@@ -82,7 +86,7 @@ function gracefulShutdown() {
   });
   setTimeout(() => {
     console.log('Forcing shutdown...');
-    process.exit(1);
+    process.exit(0);
   }, 10000);
 }
 

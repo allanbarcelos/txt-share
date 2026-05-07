@@ -11,5 +11,3 @@ services:
       NODE_ENV: development
       ALLOWED_ORIGINS: http://localhost,http://localhost:4200
     command: ["node", "--watch", "server.js"]
-    ports:
-      - "3000:3000"

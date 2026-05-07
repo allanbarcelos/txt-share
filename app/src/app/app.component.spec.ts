@@ -450,6 +450,20 @@ describe('AppComponent', () => {
       expect(component.countdownTxt).toBe('00:00');
     }));
 
+    it('should set countdownTxt immediately on _startTXT without waiting for first tick', fakeAsync(() => {
+      mockSocket.trigger('_startTXT', START_TXT_DATA());
+      // No tick — countdownTxt must be initialised synchronously in startCountDown
+      expect(component.countdownTxt).toMatch(/^\d{2}:\d{2}$/);
+      discardPeriodicTasks();
+    }));
+
+    it('should set countdownTxt immediately on _updateTXT without waiting for first tick', fakeAsync(() => {
+      mockSocket.trigger('_updateTXT', { txt: 'x', validUntil: new Date(Date.now() + 1800000).toISOString() });
+      // No tick — countdownTxt must reflect the new countdown immediately
+      expect(component.countdownTxt).toBe('30:00');
+      discardPeriodicTasks();
+    }));
+
     it('should use 3600s fallback when validUntil is invalid (NaN)', fakeAsync(() => {
       mockSocket.trigger('_startTXT', { ...START_TXT_DATA(), validUntil: 'not-a-date' });
       expect(component['countdown']).toBe(3600);

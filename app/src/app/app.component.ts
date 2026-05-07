@@ -168,6 +168,7 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
 
   private startCountDown() {
     if (this.countdownInterval) clearInterval(this.countdownInterval);
+    this.countdownTxt = this.formatTime(this.countdown);
     this.countdownInterval = setInterval(() => {
       this.countdown = Math.max(0, this.countdown - 1);
       this.countdownTxt = this.formatTime(this.countdown);

@@ -140,10 +140,6 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
     this.lineCounterTextarea.nativeElement.scrollLeft = this.txtEditorTextarea.nativeElement.scrollLeft;
   }
 
-  onTxtEditorInput() {
-    this.line_counter();
-  }
-
   onTxtEditorKeydown(event: KeyboardEvent) {
     if (event.key !== 'Tab') return;
 

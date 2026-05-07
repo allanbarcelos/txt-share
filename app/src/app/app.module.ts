@@ -1,7 +1,7 @@
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 
-import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { FormsModule } from '@angular/forms';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { NgbModalModule } from '@ng-bootstrap/ng-bootstrap';
 import { SocketIoConfig, SocketIoModule } from 'ngx-socket-io';
@@ -42,7 +42,6 @@ const config: SocketIoConfig = {
     BrowserModule,
     AppRoutingModule,
     FormsModule,
-    ReactiveFormsModule,
     SocketIoModule.forRoot(config),
     BrowserAnimationsModule, // required animations module
     ToastrModule.forRoot({

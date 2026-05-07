@@ -27,19 +27,27 @@ function validateId(id) {
 }
 
 function validateTxt(txt) {
-    return typeof txt === 'string';
+    if (typeof txt !== 'string') return false;
+    if (/\x00/.test(txt)) return false;  // no null bytes
+    return true;
 }
 
 function setupSocket(io) {
     console.log('Socket.IO initialized');
 
-    // Cleanup stale rate limit entries every 5 minutes
-    setInterval(() => {
+    // Cleanup stale rate limit entries every 60 seconds
+    const cleanupInterval = setInterval(() => {
         const now = Date.now();
         for (const [key, entry] of socketRateLimits.entries()) {
             if (now > entry.resetAt) socketRateLimits.delete(key);
         }
-    }, 5 * 60 * 1000);
+        if (socketRateLimits.size > 10000) {
+            socketRateLimits.clear();
+            console.warn('socketRateLimits flushed: exceeded 10000 entries');
+        }
+    }, 60 * 1000);
+    // unref so the interval doesn't prevent process exit (e.g. in tests)
+    cleanupInterval.unref();
 
     io.on('connection', (socket) => {
         console.log(`Client connected. ID: ${socket.id} Total: ${io.engine.clientsCount}`);
@@ -53,7 +61,7 @@ function setupSocket(io) {
         });
 
         socket.on('updateTXT', (data, callback) => {
-            if (isRateLimited(socket.id, 'updateTXT', 120, 60000)) {
+            if (isRateLimited(socket.id, 'updateTXT', 30, 60000)) {
                 callback?.({ success: false, error: 'Rate limit exceeded' });
                 return;
             }
@@ -125,8 +133,16 @@ async function startTXT(socket, data, callback) {
         }
 
         await socket.join(obj.id);
-        socket.emit('_startTXT', obj);
-        callback?.({ success: true, data: obj });
+        // Re-verify after await: another client may have deleted it
+        const current = getTxtById(obj.id);
+        if (!current && id !== undefined) {
+            socket.emit('_txtNotExist', { id: obj.id });
+            callback?.({ success: false, error: 'TXT was deleted' });
+            return;
+        }
+        const toSend = current || obj;
+        socket.emit('_startTXT', toSend);
+        callback?.({ success: true, data: toSend });
 
     } catch (error) {
         console.error('Error in startTXT:', error);
@@ -238,4 +254,4 @@ async function renewTXT(socket, data, callback) {
     }
 }
 
-module.exports = { setupSocket };
+module.exports = { setupSocket, validateId, validateTxt, isRateLimited, socketRateLimits };

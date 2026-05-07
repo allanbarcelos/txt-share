@@ -1,5 +1,4 @@
 import { Clipboard } from '@angular/cdk/clipboard';
-import { Location } from '@angular/common';
 import { Component } from '@angular/core';
 
 @Component({
@@ -8,16 +7,13 @@ import { Component } from '@angular/core';
   styleUrls: ['./share-modal.component.scss']
 })
 export class ShareModalComponent {
-
-  url!: string;
-
-  constructor(private location: Location, private clipboard: Clipboard) {
-    this.url = `${window.location.href}`;
-
+  get url(): string {
+    return window.location.href;
   }
 
+  constructor(private clipboard: Clipboard) {}
+
   copyToClipboard() {
-    const id = this.location.path().replace('/', '');
-    this.clipboard.copy(id);
+    this.clipboard.copy(this.url);
   }
 }

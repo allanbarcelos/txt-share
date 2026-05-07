@@ -4,15 +4,12 @@ const { getTxtDB, deleteTxt } = require('./cache');
 function cleanupExpiredTXT() {
     try {
         const txtDB = getTxtDB();
-        const oneHourAgo = new Date(Date.now() - 3600000);
+        const now = new Date();
 
-        const expiredItems = txtDB.filter(({ createdAt }) => {
+        const expiredItems = txtDB.filter(({ validUntil }) => {
             try {
-                return new Date(createdAt) < oneHourAgo;
-            } catch (error) {
-                console.error('Error parsing date in cleanup:', error);
-                return false;
-            }
+                return validUntil && new Date(validUntil) < now;
+            } catch { return false; }
         });
 
         console.log(`Cleaning up ${expiredItems.length} expired TXT records`);

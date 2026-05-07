@@ -17,6 +17,13 @@ services:
       timeout: 5s
       start_period: 15s
       retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 128M
+        reservations:
+          memory: 64M
 
   txt-share-api:
     build:
@@ -35,6 +42,13 @@ services:
       timeout: 5s
       start_period: 10s
       retries: 3
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          memory: 128M
 
 networks:
   txt-share:

@@ -4,7 +4,7 @@
   </div>
   <div class="card-body">
     <div class="input-group mb-3">
-      <input type="text" class="form-control" [(ngModel)]="url" disabled>
+      <input type="text" class="form-control" [value]="url" disabled readonly>
       <button class="btn btn-outline-secondary" type="button" (click)="copyToClipboard()">
         <i class="bi bi-clipboard"></i>
       </button>

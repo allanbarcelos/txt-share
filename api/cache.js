@@ -35,7 +35,10 @@ function getTxtById(id) {
 
 function setTxt(id, data) {
     try {
-        return cache.set(`${txtDBPrefixKey}${id}`, data);
+        const ttlSeconds = Math.max(1, Math.round(
+            (new Date(data.validUntil).getTime() - Date.now()) / 1000
+        ));
+        return cache.set(`${txtDBPrefixKey}${id}`, data, ttlSeconds);
     } catch (error) {
         console.error(`Error setting TXT ${id}:`, error);
         return false;

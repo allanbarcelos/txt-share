@@ -4,7 +4,7 @@ import { Router } from '@angular/router';
 import { Socket } from 'ngx-socket-io';
 import { ToastrService } from 'ngx-toastr';
 import { Subject } from 'rxjs';
-import { take, takeUntil } from 'rxjs/operators';
+import { debounceTime, take, takeUntil } from 'rxjs/operators';
 
 @Component({
   selector: 'app-root',
@@ -25,6 +25,7 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
   private countdown: number = 0;
   private countdownInterval: any;
   private destroy$ = new Subject<void>();
+  private updateSubject = new Subject<{ id: string; txt: string }>();
 
   constructor(
     private socket: Socket,
@@ -37,6 +38,13 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
   ngOnInit(): void {
     this.socket.fromEvent('connect').pipe(takeUntil(this.destroy$)).subscribe(() => {
       console.log('Connected!', this.socket.ioSocket.id);
+    });
+
+    this.updateSubject.pipe(
+      debounceTime(300),
+      takeUntil(this.destroy$)
+    ).subscribe(({ id, txt }) => {
+      this.socket.emit('updateTXT', { id, txt });
     });
 
     const id = this.location.path().replace('/', '');
@@ -55,7 +63,10 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
       this.line_counter();
       this.cdr.detectChanges();
 
-      this.countdown = Math.round((new Date(validUntil).getTime() - Date.now()) / 1000);
+      const expiryMs = new Date(validUntil).getTime();
+      this.countdown = Number.isFinite(expiryMs)
+        ? Math.max(0, Math.round((expiryMs - Date.now()) / 1000))
+        : 3600;
       this.startCountDown();
     });
 
@@ -86,7 +97,10 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
       takeUntil(this.destroy$)
     ).subscribe(({ txt, validUntil }: any) => {
       this.txtEditor = txt;
-      this.countdown = Math.round((new Date(validUntil).getTime() - Date.now()) / 1000);
+      const expiryMs = new Date(validUntil).getTime();
+      this.countdown = Number.isFinite(expiryMs)
+        ? Math.max(0, Math.round((expiryMs - Date.now()) / 1000))
+        : 3600;
       this.startCountDown();
     });
 
@@ -104,11 +118,12 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
     clearInterval(this.countdownInterval);
     this.destroy$.next();
     this.destroy$.complete();
+    this.updateSubject.complete();
   }
 
   ngModelChange(txt: string) {
     const id = this.location.path().replace('/', '');
-    this.socket.emit('updateTXT', { id, txt });
+    this.updateSubject.next({ id, txt });
   }
 
   onTxtEditorScroll() {
@@ -145,17 +160,18 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
   private startCountDown() {
     if (this.countdownInterval) clearInterval(this.countdownInterval);
     this.countdownInterval = setInterval(() => {
-      this.countdown--;
-      if (this.countdown <= 0) {
+      this.countdown = Math.max(0, this.countdown - 1);
+      this.countdownTxt = this.formatTime(this.countdown);
+      if (this.countdown === 0) {
         clearInterval(this.countdownInterval);
       }
-      this.countdownTxt = this.formatTime(this.countdown);
     }, 1000);
   }
 
   private formatTime(seconds: number): string {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
+    const s = Math.max(0, seconds);
+    const mins = Math.floor(s / 60);
+    const secs = s % 60;
     return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
   }
 }

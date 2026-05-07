@@ -1,6 +1,8 @@
 import { Location } from '@angular/common';
+import { NO_ERRORS_SCHEMA } from '@angular/core';
 import { ComponentFixture, TestBed, discardPeriodicTasks, fakeAsync, tick } from '@angular/core/testing';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { RouterTestingModule } from '@angular/router/testing';
 import { Socket } from 'ngx-socket-io';
 import { ToastrService } from 'ngx-toastr';
@@ -64,7 +66,10 @@ describe('AppComponent', () => {
         { provide: Socket, useValue: mockSocket },
         { provide: ToastrService, useValue: mockToastr },
       ],
+      schemas: [NO_ERRORS_SCHEMA],
     }).compileComponents();
+
+    spyOn(TestBed.inject(Router), 'navigate').and.returnValue(Promise.resolve(true));
 
     fixture = TestBed.createComponent(AppComponent);
     component = fixture.componentInstance;
@@ -180,12 +185,13 @@ describe('AppComponent', () => {
     });
 
     it('should only emit startTXT once even if toast hidden multiple times', () => {
+      mockSocket.emit.calls.reset();
       mockSocket.trigger('_txtNotExist', {});
       const toastRef = mockToastr.error.calls.mostRecent().returnValue;
       toastRef._hide();
       toastRef._hide();
       const startTxtCalls = mockSocket.emit.calls.all()
-        .filter((c: any) => c.args[0] === 'startTXT' && !c.args[1]?.id);
+        .filter((c: any) => c.args[0] === 'startTXT');
       expect(startTxtCalls.length).toBe(1);
     });
   });
@@ -216,21 +222,53 @@ describe('AppComponent', () => {
   // ── ngModelChange ───────────────────────────────────────────────────────────
 
   describe('ngModelChange', () => {
-    it('should emit updateTXT with current id and text', () => {
+    it('should NOT emit updateTXT immediately (debounced)', fakeAsync(() => {
       spyOn(TestBed.inject(Location), 'path').and.returnValue('/s_abc1234');
       fixture.detectChanges();
+      mockSocket.emit.calls.reset();
       component.ngModelChange('new content');
+      // Before debounce fires, no updateTXT should be emitted
+      expect(mockSocket.emit).not.toHaveBeenCalledWith('updateTXT', jasmine.anything());
+      discardPeriodicTasks();
+    }));
+
+    it('should emit updateTXT after 300ms debounce', fakeAsync(() => {
+      spyOn(TestBed.inject(Location), 'path').and.returnValue('/s_abc1234');
+      fixture.detectChanges();
+      mockSocket.emit.calls.reset();
+      component.ngModelChange('new content');
+      tick(300);
       expect(mockSocket.emit).toHaveBeenCalledWith('updateTXT', {
         id: 's_abc1234',
         txt: 'new content',
       });
-    });
+      discardPeriodicTasks();
+    }));
 
-    it('should emit updateTXT with empty id when at root', () => {
+    it('should debounce rapid successive calls, emitting only the last value', fakeAsync(() => {
+      spyOn(TestBed.inject(Location), 'path').and.returnValue('/s_abc1234');
       fixture.detectChanges();
+      mockSocket.emit.calls.reset();
+      component.ngModelChange('a');
+      tick(100);
+      component.ngModelChange('ab');
+      tick(100);
+      component.ngModelChange('abc');
+      tick(300);
+      const calls = mockSocket.emit.calls.all().filter((c: any) => c.args[0] === 'updateTXT');
+      expect(calls.length).toBe(1);
+      expect(calls[0].args[1]).toEqual({ id: 's_abc1234', txt: 'abc' });
+      discardPeriodicTasks();
+    }));
+
+    it('should emit updateTXT with empty id when at root', fakeAsync(() => {
+      fixture.detectChanges();
+      mockSocket.emit.calls.reset();
       component.ngModelChange('text');
+      tick(300);
       expect(mockSocket.emit).toHaveBeenCalledWith('updateTXT', { id: '', txt: 'text' });
-    });
+      discardPeriodicTasks();
+    }));
   });
 
   // ── Tab key handling ────────────────────────────────────────────────────────
@@ -348,6 +386,8 @@ describe('AppComponent', () => {
     it('should format 90 seconds as 01:30', () => expect(fmt(90)).toBe('01:30'));
     it('should format 3599 seconds as 59:59', () => expect(fmt(3599)).toBe('59:59'));
     it('should format 3600 seconds as 60:00', () => expect(fmt(3600)).toBe('60:00'));
+    it('should clamp negative seconds to 00:00', () => expect(fmt(-1)).toBe('00:00'));
+    it('should clamp -100 seconds to 00:00', () => expect(fmt(-100)).toBe('00:00'));
   });
 
   // ── Countdown ───────────────────────────────────────────────────────────────
@@ -379,6 +419,26 @@ describe('AppComponent', () => {
       expect(component.countdownTxt).toBe('59:59');
       discardPeriodicTasks();
     }));
+
+    it('should clamp countdown to 0 (never negative)', fakeAsync(() => {
+      const data = { ...START_TXT_DATA(), validUntil: new Date(Date.now() + 1000).toISOString() };
+      mockSocket.trigger('_startTXT', data);
+      tick(5000); // let it run well past zero
+      expect(component['countdown']).toBe(0);
+      expect(component.countdownTxt).toBe('00:00');
+    }));
+
+    it('should use 3600s fallback when validUntil is invalid (NaN)', fakeAsync(() => {
+      mockSocket.trigger('_startTXT', { ...START_TXT_DATA(), validUntil: 'not-a-date' });
+      expect(component['countdown']).toBe(3600);
+      discardPeriodicTasks();
+    }));
+
+    it('should use 3600s fallback when validUntil is undefined', fakeAsync(() => {
+      mockSocket.trigger('_startTXT', { ...START_TXT_DATA(), validUntil: undefined });
+      expect(component['countdown']).toBe(3600);
+      discardPeriodicTasks();
+    }));
   });
 
   // ── Scroll sync ─────────────────────────────────────────────────────────────
@@ -388,13 +448,20 @@ describe('AppComponent', () => {
       fixture.detectChanges();
       const editor = component['txtEditorTextarea'].nativeElement;
       const counter = component['lineCounterTextarea'].nativeElement;
-      Object.defineProperty(editor, 'scrollTop', { value: 200, writable: true });
-      Object.defineProperty(editor, 'scrollLeft', { value: 40, writable: true });
+
+      Object.defineProperty(editor, 'scrollTop',  { value: 200, writable: true, configurable: true });
+      Object.defineProperty(editor, 'scrollLeft', { value: 40,  writable: true, configurable: true });
+
+      // Intercept the DOM setter on the counter element (DOM ignores scrollTop if not scrollable)
+      let capturedScrollTop = 0;
+      let capturedScrollLeft = 0;
+      Object.defineProperty(counter, 'scrollTop',  { get: () => capturedScrollTop,  set: (v: number) => { capturedScrollTop  = v; }, configurable: true });
+      Object.defineProperty(counter, 'scrollLeft', { get: () => capturedScrollLeft, set: (v: number) => { capturedScrollLeft = v; }, configurable: true });
 
       component.onTxtEditorScroll();
 
-      expect(counter.scrollTop).toBe(200);
-      expect(counter.scrollLeft).toBe(40);
+      expect(capturedScrollTop).toBe(200);
+      expect(capturedScrollLeft).toBe(40);
     });
   });
 

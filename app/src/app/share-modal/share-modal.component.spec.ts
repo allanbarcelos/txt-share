@@ -1,7 +1,5 @@
 import { Clipboard } from '@angular/cdk/clipboard';
-import { Location } from '@angular/common';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { FormsModule } from '@angular/forms';
 import { By } from '@angular/platform-browser';
 import { ShareModalComponent } from './share-modal.component';
 
@@ -11,28 +9,20 @@ class MockClipboard {
   copy = jasmine.createSpy('copy').and.returnValue(true);
 }
 
-class MockLocation {
-  path = jasmine.createSpy('path').and.returnValue('/s_abc1234');
-}
-
 // ─── Suite ────────────────────────────────────────────────────────────────────
 
 describe('ShareModalComponent', () => {
   let component: ShareModalComponent;
   let fixture: ComponentFixture<ShareModalComponent>;
   let mockClipboard: MockClipboard;
-  let mockLocation: MockLocation;
 
   beforeEach(async () => {
     mockClipboard = new MockClipboard();
-    mockLocation  = new MockLocation();
 
     await TestBed.configureTestingModule({
       declarations: [ShareModalComponent],
-      imports: [FormsModule],
       providers: [
         { provide: Clipboard, useValue: mockClipboard },
-        { provide: Location,  useValue: mockLocation },
       ],
     }).compileComponents();
 
@@ -47,38 +37,37 @@ describe('ShareModalComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  // ── URL initialization ───────────────────────────────────────────────────────
+  // ── url getter ───────────────────────────────────────────────────────────────
 
-  describe('url property', () => {
-    it('should set url from window.location.href', () => {
+  describe('url getter', () => {
+    it('should return window.location.href', () => {
       expect(component.url).toBe(window.location.href);
     });
 
-    it('should render url in the readonly input', () => {
-      component.url = 'http://localhost/s_abc1234';
+    it('should render the url in the readonly input via [value] binding', () => {
       fixture.detectChanges();
       const input = fixture.debugElement.query(By.css('input.form-control'));
-      expect((input.nativeElement as HTMLInputElement).value).toBe('http://localhost/s_abc1234');
+      expect((input.nativeElement as HTMLInputElement).value).toBe(window.location.href);
+    });
+
+    it('input should use [value] binding (not ngModel)', () => {
+      const input = fixture.debugElement.query(By.css('input.form-control'));
+      // With [value] binding the element should be readonly
+      expect(input.nativeElement.hasAttribute('readonly')).toBeTrue();
     });
   });
 
   // ── copyToClipboard ──────────────────────────────────────────────────────────
 
   describe('copyToClipboard()', () => {
-    it('should copy the session id extracted from location path', () => {
+    it('should copy window.location.href (full URL)', () => {
       component.copyToClipboard();
-      expect(mockClipboard.copy).toHaveBeenCalledWith('s_abc1234');
-    });
-
-    it('should strip leading slash from path', () => {
-      mockLocation.path.and.returnValue('/s_xyz9999');
-      component.copyToClipboard();
-      expect(mockClipboard.copy).toHaveBeenCalledWith('s_xyz9999');
+      expect(mockClipboard.copy).toHaveBeenCalledWith(window.location.href);
     });
 
     it('should call clipboard.copy when copy button is clicked', () => {
       fixture.debugElement.query(By.css('button.btn-outline-secondary')).nativeElement.click();
-      expect(mockClipboard.copy).toHaveBeenCalled();
+      expect(mockClipboard.copy).toHaveBeenCalledWith(window.location.href);
     });
   });
 

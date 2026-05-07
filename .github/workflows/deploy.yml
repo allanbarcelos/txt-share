@@ -261,12 +261,14 @@ jobs:
       - name: Rollback on Failure
         if: failure()
         uses: appleboy/ssh-action@v0.1.10
+        env:
+          MAIN_SERVICE: ${{ needs.discover-services.outputs.main_service }}
         with:
           host: ${{ vars.SSH_HST }}
           port: ${{ vars.SSH_PRT }}
           username: ${{ vars.SSH_USR }}
           key: ${{ secrets.SSH_KEY }}
-          envs: REPO_NAME
+          envs: REPO_NAME,MAIN_SERVICE
           script: |
             echo "ROLLING BACK..."
             if [ ! -f /tmp/rollback_${REPO_NAME}.env ]; then
@@ -280,9 +282,13 @@ jobs:
             while IFS='=' read -r name image; do
               [[ -z "$name" || -z "$image" ]] && continue
               echo "Restoring $name from $image"
+              EXTRA_FLAGS=""
+              if [ -n "$MAIN_SERVICE" ] && echo "$name" | grep -q "${REPO_NAME}-${MAIN_SERVICE}\|^${REPO_NAME}$"; then
+                EXTRA_FLAGS="--network barcelos.dev -p 80:80"
+              fi
               docker run -d --name "$name" --restart unless-stopped \
                 --network $REPO_NAME \
-                $(echo "$name" | grep -q "$MAIN_SERVICE" && echo "--network barcelos.dev -p 80:80") \
+                $EXTRA_FLAGS \
                 "$image" || true
             done < /tmp/rollback_${REPO_NAME}.env
 

@@ -1,1 +1,12 @@
 node_modules
+.git
+.github
+
+app/node_modules
+app/dist
+app/coverage
+app/.angular
+
+api/node_modules
+
+*.log

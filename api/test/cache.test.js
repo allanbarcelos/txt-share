@@ -133,6 +133,25 @@ describe('cache operations', () => {
     // ── TTL derived from validUntil ──────────────────────────────────────────
 
     describe('TTL from validUntil', () => {
+        test('setTxt falls back to 3600s when validUntil is undefined', () => {
+            const item = { id: 's_nan001', txt: 'no expiry' }; // no validUntil
+            setTxt(item.id, item);
+            const ttl = cache.getTtl(`${txtDBPrefixKey}${item.id}`);
+            const remaining = ttl - Date.now();
+            // Should be ~3600s fallback, allow ±5s
+            assert.ok(remaining > 3595000 && remaining <= 3605000,
+                `Expected fallback TTL ~3600000ms but got ${remaining}ms`);
+        });
+
+        test('setTxt falls back to 3600s when validUntil is not a valid date', () => {
+            const item = { id: 's_nan002', validUntil: 'not-a-date', txt: 'bad expiry' };
+            setTxt(item.id, item);
+            const ttl = cache.getTtl(`${txtDBPrefixKey}${item.id}`);
+            const remaining = ttl - Date.now();
+            assert.ok(remaining > 3595000 && remaining <= 3605000,
+                `Expected fallback TTL ~3600000ms but got ${remaining}ms`);
+        });
+
         test('setTxt uses TTL derived from validUntil', () => {
             const validUntil = new Date(Date.now() + 5000).toISOString(); // 5s from now
             const item = { id: 's_ttl001', validUntil, txt: 'ttl test' };

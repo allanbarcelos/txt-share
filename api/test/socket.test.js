@@ -326,12 +326,14 @@ describe('deleteTXT via mock', () => {
     function makeSocket(id = 'socket-del-id') {
         const eventListeners = {};
         const emitted = [];
+        const toEmitted = [];
         return {
             id,
             emitted,
+            toEmitted,
             on(event, handler) { eventListeners[event] = handler; },
             emit(event, data) { emitted.push({ event, data }); },
-            to() { return { emit() {} }; },
+            to() { return { emit(event, data) { toEmitted.push({ event, data }); } }; },
             _trigger(event, data, cb) {
                 if (eventListeners[event]) eventListeners[event](data, cb);
             },
@@ -370,6 +372,19 @@ describe('deleteTXT via mock', () => {
         assert.strictEqual(getTxtById(item.id), undefined);
     });
 
+    test('deleteTXT emits _deleteTXT to the requesting socket', async () => {
+        const item = { id: 's_del0002', validUntil: futureValidUntil(), txt: 'to delete' };
+        setTxt(item.id, item);
+
+        await new Promise(resolve => {
+            mockSocket._trigger('deleteTXT', { id: item.id }, resolve);
+        });
+
+        const selfEvt = mockSocket.emitted.find(e => e.event === '_deleteTXT');
+        assert.ok(selfEvt, '_deleteTXT should be emitted to the requesting socket');
+        assert.strictEqual(selfEvt.data.success, true);
+    });
+
     test('deleteTXT on non-existent id returns error', async () => {
         let cbResult;
         await new Promise(resolve => {
@@ -380,5 +395,78 @@ describe('deleteTXT via mock', () => {
         });
 
         assert.strictEqual(cbResult.success, false);
+    });
+});
+
+describe('renewTXT via mock', () => {
+    let mockSocket;
+    let mockIo;
+    const { setupSocket } = require('../socket');
+
+    function makeSocket(id = 'socket-ren-id') {
+        const eventListeners = {};
+        const emitted = [];
+        const toEmitted = [];
+        return {
+            id,
+            emitted,
+            toEmitted,
+            on(event, handler) { eventListeners[event] = handler; },
+            emit(event, data) { emitted.push({ event, data }); },
+            to() { return { emit(event, data) { toEmitted.push({ event, data }); } }; },
+            join: async () => {},
+            _trigger(event, data, cb) {
+                if (eventListeners[event]) eventListeners[event](data, cb);
+            },
+        };
+    }
+
+    function makeIo(socket) {
+        return {
+            on(event, handler) { if (event === 'connection') handler(socket); },
+            engine: { clientsCount: 1, on() {} },
+        };
+    }
+
+    beforeEach(() => {
+        clearCache();
+        socketRateLimits.clear();
+        mockSocket = makeSocket();
+        mockIo = makeIo(mockSocket);
+        setupSocket(mockIo);
+    });
+
+    test('renewTXT emits _updateTXT to the requesting socket', async () => {
+        const item = { id: 's_ren0001', validUntil: futureValidUntil(1000), txt: 'soon expires' };
+        setTxt(item.id, item);
+
+        let cbResult;
+        await new Promise(resolve => {
+            mockSocket._trigger('renewTXT', { id: item.id }, (res) => {
+                cbResult = res;
+                resolve();
+            });
+        });
+
+        assert.strictEqual(cbResult.success, true);
+        const selfEvt = mockSocket.emitted.find(e => e.event === '_updateTXT');
+        assert.ok(selfEvt, '_updateTXT should be emitted to the requesting socket');
+        // validUntil should be ~1h from now
+        const newExpiry = new Date(selfEvt.data.validUntil).getTime();
+        assert.ok(newExpiry > Date.now() + 3500000, 'validUntil should be ~1h in the future');
+    });
+
+    test('renewTXT on non-existent id emits _txtNotExist', async () => {
+        let cbResult;
+        await new Promise(resolve => {
+            mockSocket._trigger('renewTXT', { id: 's_nope001' }, (res) => {
+                cbResult = res;
+                resolve();
+            });
+        });
+
+        assert.strictEqual(cbResult.success, false);
+        const evt = mockSocket.emitted.find(e => e.event === '_txtNotExist');
+        assert.ok(evt, '_txtNotExist should be emitted');
     });
 });

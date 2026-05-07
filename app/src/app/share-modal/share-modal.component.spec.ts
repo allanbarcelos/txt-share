@@ -52,8 +52,36 @@ describe('ShareModalComponent', () => {
 
     it('input should use [value] binding (not ngModel)', () => {
       const input = fixture.debugElement.query(By.css('input.form-control'));
-      // With [value] binding the element should be readonly
       expect(input.nativeElement.hasAttribute('readonly')).toBeTrue();
+    });
+  });
+
+  // ── encodedUrl getter ────────────────────────────────────────────────────────
+
+  describe('encodedUrl getter', () => {
+    it('should return URL-encoded version of url', () => {
+      expect(component.encodedUrl).toBe(encodeURIComponent(window.location.href));
+    });
+
+    it('should encode special characters (e.g. colon, slash)', () => {
+      expect(component.encodedUrl).not.toContain('//');
+      expect(component.encodedUrl).not.toContain(':');
+    });
+
+    it('Telegram link should contain encodedUrl', () => {
+      fixture.detectChanges();
+      const link = fixture.debugElement.queryAll(By.css('a')).find(el =>
+        el.nativeElement.textContent.includes('Telegram')
+      );
+      expect(link!.nativeElement.href).toContain(component.encodedUrl);
+    });
+
+    it('Teams link should contain encodedUrl', () => {
+      fixture.detectChanges();
+      const link = fixture.debugElement.queryAll(By.css('a')).find(el =>
+        el.nativeElement.textContent.includes('Teams')
+      );
+      expect(link!.nativeElement.href).toContain(component.encodedUrl);
     });
   });
 

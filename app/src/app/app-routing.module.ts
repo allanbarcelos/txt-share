@@ -3,15 +3,8 @@ import { RouterModule, Routes } from '@angular/router';
 import { AppComponent } from './app.component';
 
 const routes: Routes = [
-  {
-    path: ':id',
-    component: AppComponent
-  },
-  {
-    path: '',
-    redirectTo: '',
-    pathMatch: 'full'
-  },
+  { path: ':id', component: AppComponent },
+  { path: '', component: AppComponent },
 ];
 
 @NgModule({

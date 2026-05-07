@@ -7,7 +7,7 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci --omit=dev
 
-COPY *.js ./
+COPY server.js socket.js cache.js cron.js ./
 COPY .env.example .env.example
 
 RUN addgroup -g 1001 -S nodejs \

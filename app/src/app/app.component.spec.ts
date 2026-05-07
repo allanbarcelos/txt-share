@@ -94,10 +94,6 @@ describe('AppComponent', () => {
       expect(mockSocket.emit).toHaveBeenCalledWith('startTXT', { id: 's_abc1234' });
     });
 
-    it('should set url from window.location.href', () => {
-      fixture.detectChanges();
-      expect(component.url).toBe(window.location.href);
-    });
   });
 
   // ── _startTXT event ─────────────────────────────────────────────────────────
@@ -146,6 +142,16 @@ describe('AppComponent', () => {
       expect(component.txtEditor).toBe('Updated content');
     });
 
+    it('should sync textarea DOM value', () => {
+      mockSocket.trigger('_updateTXT', { txt: 'Remote text', validUntil: VALID_UNTIL_1H() });
+      expect(component['txtEditorTextarea'].nativeElement.value).toBe('Remote text');
+    });
+
+    it('should update line counter after remote update', () => {
+      mockSocket.trigger('_updateTXT', { txt: 'line1\nline2\nline3', validUntil: VALID_UNTIL_1H() });
+      expect(component.lineCounter).toContain('3.');
+    });
+
     it('should reset countdown from new validUntil', fakeAsync(() => {
       mockSocket.trigger('_updateTXT', {
         txt: 'x',
@@ -155,6 +161,22 @@ describe('AppComponent', () => {
       expect(component.countdownTxt).toBe('29:59');
       discardPeriodicTasks();
     }));
+  });
+
+  // ── _error event ────────────────────────────────────────────────────────────
+
+  describe('socket event: _error', () => {
+    beforeEach(() => fixture.detectChanges());
+
+    it('should show an error toast with the server message', () => {
+      mockSocket.trigger('_error', { message: 'Failed to start TXT' });
+      expect(mockToastr.error).toHaveBeenCalledWith('Failed to start TXT', 'Error');
+    });
+
+    it('should show a generic message when _error has no message', () => {
+      mockSocket.trigger('_error', {});
+      expect(mockToastr.error).toHaveBeenCalledWith('An unexpected error occurred.', 'Error');
+    });
   });
 
   // ── _sizeExceeded event ─────────────────────────────────────────────────────

@@ -208,6 +208,7 @@ async function deleteTXT(socket, data, callback) {
         }
 
         if (deleteTxt(id)) {
+            socket.emit('_deleteTXT', { success: true });
             socket.to(id).emit('_deleteTXT', { success: true });
             callback?.({ success: true });
         } else {
@@ -244,6 +245,7 @@ async function renewTXT(socket, data, callback) {
             throw new Error('Failed to renew TXT');
         }
 
+        socket.emit('_updateTXT', obj);
         socket.to(obj.id).emit('_updateTXT', obj);
         callback?.({ success: true, data: obj });
 

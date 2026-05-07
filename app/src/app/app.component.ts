@@ -19,7 +19,6 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
   lineCounter: string = '';
   txtEditor: string = '';
   lineCountCache: number = 0;
-  url!: string;
   countdownTxt!: string;
 
   private countdown: number = 0;
@@ -48,7 +47,6 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
     });
 
     const id = this.location.path().replace('/', '');
-    this.url = `${window.location.href}`;
 
     this.socket.fromEvent('_startTXT').pipe(
       takeUntil(this.destroy$)
@@ -97,11 +95,22 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
       takeUntil(this.destroy$)
     ).subscribe(({ txt, validUntil }: any) => {
       this.txtEditor = txt;
+      if (this.txtEditorTextarea) {
+        this.txtEditorTextarea.nativeElement.value = txt;
+      }
+      this.line_counter();
+      this.cdr.detectChanges();
       const expiryMs = new Date(validUntil).getTime();
       this.countdown = Number.isFinite(expiryMs)
         ? Math.max(0, Math.round((expiryMs - Date.now()) / 1000))
         : 3600;
       this.startCountDown();
+    });
+
+    this.socket.fromEvent<any>('_error').pipe(
+      takeUntil(this.destroy$)
+    ).subscribe(({ message }: any) => {
+      this.toastrSrv.error(message || 'An unexpected error occurred.', 'Error');
     });
 
     this.socket.emit('startTXT', { id: id || undefined });

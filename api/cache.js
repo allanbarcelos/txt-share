@@ -35,9 +35,10 @@ function getTxtById(id) {
 
 function setTxt(id, data) {
     try {
-        const ttlSeconds = Math.max(1, Math.round(
-            (new Date(data.validUntil).getTime() - Date.now()) / 1000
-        ));
+        const expiry = new Date(data.validUntil).getTime();
+        const ttlSeconds = Number.isFinite(expiry)
+            ? Math.max(1, Math.round((expiry - Date.now()) / 1000))
+            : 3600;
         return cache.set(`${txtDBPrefixKey}${id}`, data, ttlSeconds);
     } catch (error) {
         console.error(`Error setting TXT ${id}:`, error);

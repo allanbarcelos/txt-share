@@ -12,7 +12,7 @@ class MockSocket {
 }
 
 class MockNgbModal {
-  open = jasmine.createSpy('open').and.returnValue({ result: Promise.resolve('closed') });
+  open = jasmine.createSpy('open').and.returnValue({});
 }
 
 class MockLocation {
@@ -125,31 +125,38 @@ describe('HeaderComponent', () => {
   // ── Method: downloadTXT ──────────────────────────────────────────────────────
 
   describe('downloadTXT()', () => {
-    it('should create an anchor element and click it', () => {
-      const anchor = document.createElement('a');
+    let anchor: HTMLAnchorElement;
+
+    beforeEach(() => {
+      anchor = document.createElement('a');
       spyOn(document, 'createElement').and.returnValue(anchor);
       spyOn(document.body, 'appendChild');
       spyOn(document.body, 'removeChild');
       spyOn(anchor, 'click');
+      spyOn(URL, 'createObjectURL').and.returnValue('blob:fake');
+      spyOn(URL, 'revokeObjectURL');
+    });
 
+    it('should trigger a download click', () => {
       component.txtEditor = 'file content';
       component.downloadTXT();
-
       expect(anchor.click).toHaveBeenCalled();
-      expect(anchor.download).toBe('s_abc1234.txt');
     });
 
     it('should use current session id as filename', () => {
-      mockLocation.path.and.returnValue('/s_xyz9876');
-      const anchor = document.createElement('a');
-      spyOn(document, 'createElement').and.returnValue(anchor);
-      spyOn(document.body, 'appendChild');
-      spyOn(document.body, 'removeChild');
-      spyOn(anchor, 'click');
-
       component.downloadTXT();
+      expect(anchor.download).toBe('s_abc1234.txt');
+    });
 
-      expect(anchor.download).toBe('s_xyz9876.txt');
+    it('should use "txt-share.txt" as fallback filename when at root path', () => {
+      mockLocation.path.and.returnValue('/');
+      component.downloadTXT();
+      expect(anchor.download).toBe('txt-share.txt');
+    });
+
+    it('should revoke the object URL after download', () => {
+      component.downloadTXT();
+      expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:fake');
     });
   });
 
@@ -166,6 +173,13 @@ describe('HeaderComponent', () => {
       btn.nativeElement.click();
       expect(mockSocket.emit).toHaveBeenCalledWith('deleteTXT', { id: 's_abc1234' });
     });
+
+    it('should NOT emit deleteTXT when at root path (no session)', () => {
+      mockLocation.path.and.returnValue('/');
+      mockSocket.emit.calls.reset();
+      component.deleteTXT();
+      expect(mockSocket.emit).not.toHaveBeenCalled();
+    });
   });
 
   // ── Method: renewTXT ─────────────────────────────────────────────────────────
@@ -180,6 +194,13 @@ describe('HeaderComponent', () => {
       const btn = fixture.debugElement.query(By.css('[title="Renew TXT Time"]'));
       btn.nativeElement.click();
       expect(mockSocket.emit).toHaveBeenCalledWith('renewTXT', { id: 's_abc1234' });
+    });
+
+    it('should NOT emit renewTXT when at root path (no session)', () => {
+      mockLocation.path.and.returnValue('/');
+      mockSocket.emit.calls.reset();
+      component.renewTXT();
+      expect(mockSocket.emit).not.toHaveBeenCalled();
     });
   });
 

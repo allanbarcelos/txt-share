@@ -24,7 +24,7 @@ const io = socketIO(server, {
     origin: allowedOrigins,
     methods: ['GET', 'POST'],
   },
-  maxHttpBufferSize: 1e6,
+  maxHttpBufferSize: 200 * 1024,
 });
 
 app.use(express.json({ limit: '100kb' }));

@@ -11,6 +11,10 @@ export class ShareModalComponent {
     return window.location.href;
   }
 
+  get encodedUrl(): string {
+    return encodeURIComponent(this.url);
+  }
+
   constructor(private clipboard: Clipboard) {}
 
   copyToClipboard() {

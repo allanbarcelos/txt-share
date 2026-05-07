@@ -1,23 +1,24 @@
 FROM node:18-alpine
 
-RUN apk add --no-cache redis && npm install -g pm2
+RUN apk add --no-cache curl
 
 WORKDIR /app
 
 COPY package*.json ./
-COPY *.js ./
+RUN npm ci --omit=dev
 
-RUN npm install --production
-RUN npm install @socket.io/redis-adapter redis
+COPY *.js ./
+COPY .env.example .env.example
 
 RUN addgroup -g 1001 -S nodejs \
   && adduser -S txtshare -u 1001 \
   && chown -R txtshare:nodejs /app
+
 USER txtshare
 
-EXPOSE 3000 6379
+EXPOSE 3000
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD nc -z localhost 6379 && nc -z localhost 3000 || exit 1
+  CMD curl -f http://localhost:3000/health || exit 1
 
-CMD ["sh", "-c", "redis-server --daemonize yes && pm2-runtime start ecosystem.config.js"]
+CMD ["node", "server.js"]

@@ -1,0 +1,15 @@
+# Development overrides — loaded automatically by docker-compose
+# Run: docker compose up
+services:
+  txt-share-api:
+    build:
+      context: ./api
+    volumes:
+      - ./api:/app
+      - /app/node_modules
+    environment:
+      NODE_ENV: development
+      ALLOWED_ORIGINS: http://localhost,http://localhost:4200
+    command: ["node_modules/.bin/nodemon", "server.js"]
+    ports:
+      - "3000:3000"

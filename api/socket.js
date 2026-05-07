@@ -1,48 +1,109 @@
 // socket.js
 const { getTxtById, setTxt, deleteTxt, generateRandomString } = require('./cache');
 
-// Configuração de heartbeat do Socket.IO
-const SOCKET_IO_OPTIONS = {
-    pingInterval: 25000, // envia ping a cada 25s
-    pingTimeout: 10000,  // desconecta se não houver pong em 10s
-};
+const ID_PATTERN = /^s_[a-z0-9]{7}$/;
+
+// Per-socket rate limiter: max events per window per event type
+const socketRateLimits = new Map();
+
+function isRateLimited(socketId, event, maxPerWindow = 60, windowMs = 60000) {
+    const key = `${socketId}:${event}`;
+    const now = Date.now();
+    const entry = socketRateLimits.get(key);
+
+    if (!entry || now > entry.resetAt) {
+        socketRateLimits.set(key, { count: 1, resetAt: now + windowMs });
+        return false;
+    }
+
+    if (entry.count >= maxPerWindow) return true;
+
+    entry.count++;
+    return false;
+}
+
+function validateId(id) {
+    return typeof id === 'string' && ID_PATTERN.test(id);
+}
+
+function validateTxt(txt) {
+    return typeof txt === 'string';
+}
 
 function setupSocket(io) {
-    console.log("setup");
+    console.log('Socket.IO initialized');
+
+    // Cleanup stale rate limit entries every 5 minutes
+    setInterval(() => {
+        const now = Date.now();
+        for (const [key, entry] of socketRateLimits.entries()) {
+            if (now > entry.resetAt) socketRateLimits.delete(key);
+        }
+    }, 5 * 60 * 1000);
 
     io.on('connection', (socket) => {
-        console.log('Client connected. ID:', socket.id, 'Total clients:', io.engine.clientsCount);
+        console.log(`Client connected. ID: ${socket.id} Total: ${io.engine.clientsCount}`);
 
-        // Eventos do cliente
-        socket.on('startTXT', (data, callback) => startTXT(socket, data, callback));
-        socket.on('updateTXT', (data, callback) => updateTXT(socket, data, callback));
-        socket.on('deleteTXT', (data, callback) => deleteTXT(socket, data, callback));
-        socket.on('renewTXT', (data, callback) => renewTXT(socket, data, callback));
+        socket.on('startTXT', (data, callback) => {
+            if (isRateLimited(socket.id, 'startTXT', 10, 60000)) {
+                callback?.({ success: false, error: 'Rate limit exceeded' });
+                return;
+            }
+            startTXT(socket, data, callback);
+        });
+
+        socket.on('updateTXT', (data, callback) => {
+            if (isRateLimited(socket.id, 'updateTXT', 120, 60000)) {
+                callback?.({ success: false, error: 'Rate limit exceeded' });
+                return;
+            }
+            updateTXT(socket, data, callback);
+        });
+
+        socket.on('deleteTXT', (data, callback) => {
+            if (isRateLimited(socket.id, 'deleteTXT', 5, 60000)) {
+                callback?.({ success: false, error: 'Rate limit exceeded' });
+                return;
+            }
+            deleteTXT(socket, data, callback);
+        });
+
+        socket.on('renewTXT', (data, callback) => {
+            if (isRateLimited(socket.id, 'renewTXT', 10, 60000)) {
+                callback?.({ success: false, error: 'Rate limit exceeded' });
+                return;
+            }
+            renewTXT(socket, data, callback);
+        });
 
         socket.on('disconnect', (reason) => {
-            console.log('Client disconnected:', socket.id, 'Reason:', reason);
+            console.log(`Client disconnected: ${socket.id} Reason: ${reason}`);
+            // Cleanup rate limit entries for this socket
+            for (const key of socketRateLimits.keys()) {
+                if (key.startsWith(socket.id)) socketRateLimits.delete(key);
+            }
         });
 
         socket.on('error', (error) => {
-            console.error('Socket error for client', socket.id, ':', error);
+            console.error(`Socket error for client ${socket.id}:`, error);
         });
     });
 
-    io.engine.on("connection_error", (err) => {
+    io.engine.on('connection_error', (err) => {
         console.error('Connection error:', err);
     });
 }
 
-// =================== Funções de TXT ===================
-
 async function startTXT(socket, data, callback) {
     try {
-        console.log("startTXT");
-
         const { id } = data || {};
         let obj;
 
-        if (id) {
+        if (id !== undefined) {
+            if (!validateId(id)) {
+                callback?.({ success: false, error: 'Invalid ID format' });
+                return;
+            }
             obj = getTxtById(id);
             if (!obj) {
                 socket.emit('_txtNotExist', { id });
@@ -53,13 +114,10 @@ async function startTXT(socket, data, callback) {
             obj = {
                 id: `s_${generateRandomString(7)}`,
                 createdAt: new Date().toISOString(),
-                validUntil: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+                validUntil: new Date(Date.now() + 3600000).toISOString(),
                 locked: false,
-                txt: 'Type something here ...'
+                txt: 'Type something here ...',
             };
-
-            console.log(JSON.stringify(obj));
-
 
             if (!setTxt(obj.id, obj)) {
                 throw new Error('Failed to save TXT');
@@ -81,8 +139,8 @@ async function updateTXT(socket, data, callback) {
     try {
         const { id, txt } = data || {};
 
-        if (!id || txt === undefined) {
-            callback?.({ success: false, error: 'Missing required fields' });
+        if (!validateId(id) || !validateTxt(txt)) {
+            callback?.({ success: false, error: 'Missing or invalid required fields' });
             return;
         }
 
@@ -121,8 +179,8 @@ async function deleteTXT(socket, data, callback) {
     try {
         const { id } = data || {};
 
-        if (!id) {
-            callback?.({ success: false, error: 'Missing ID' });
+        if (!validateId(id)) {
+            callback?.({ success: false, error: 'Missing or invalid ID' });
             return;
         }
 
@@ -151,8 +209,8 @@ async function renewTXT(socket, data, callback) {
     try {
         const { id } = data || {};
 
-        if (!id) {
-            callback?.({ success: false, error: 'Missing ID' });
+        if (!validateId(id)) {
+            callback?.({ success: false, error: 'Missing or invalid ID' });
             return;
         }
 
@@ -163,7 +221,7 @@ async function renewTXT(socket, data, callback) {
             return;
         }
 
-        obj.validUntil = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+        obj.validUntil = new Date(Date.now() + 3600000).toISOString();
         obj.lastRenewed = new Date().toISOString();
 
         if (!setTxt(id, obj)) {

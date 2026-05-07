@@ -44,3 +44,8 @@ Thumbs.db
 #
 .angular
 proxy.conf.json
+
+# Cypress
+/cypress/screenshots
+/cypress/videos
+/cypress/downloads

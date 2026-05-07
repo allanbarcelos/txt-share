@@ -4,8 +4,7 @@ const { getTxtDB, deleteTxt } = require('./cache');
 function cleanupExpiredTXT() {
     try {
         const txtDB = getTxtDB();
-        const now = new Date();
-        const oneHourAgo = new Date(now.setHours(now.getHours() - 1));
+        const oneHourAgo = new Date(Date.now() - 3600000);
 
         const expiredItems = txtDB.filter(({ createdAt }) => {
             try {

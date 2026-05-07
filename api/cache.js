@@ -1,5 +1,6 @@
 // cache.js
 const NodeCache = require('node-cache');
+const { randomBytes } = require('crypto');
 
 // Configuração mais robusta do cache
 const cache = new NodeCache({
@@ -57,9 +58,11 @@ function deleteTxt(id) {
 
 function generateRandomString(length) {
     const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+    const charsLen = chars.length;          // 36
+    const bytes = randomBytes(length);
     let str = '';
     for (let i = 0; i < length; i++) {
-        str += chars.charAt(Math.floor(Math.random() * chars.length));
+        str += chars[bytes[i] % charsLen];
     }
     return str;
 }
